@@ -1,14 +1,42 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
-import {defineConfig} from 'vite';
+import { defineConfig, type Plugin } from 'vite';
+
+const PROJECT_ROOT = path.resolve(import.meta.dirname ?? __dirname);
+
+/**
+ * Injeta o token de sessão do OTTO no HTML servido em desenvolvimento.
+ * O token é lido de process.env.OTTO_SESSION_TOKEN, definido por server.ts
+ * (initSessionToken) antes de o Vite carregar este config.
+ * Em produção, o mesmo é feito pelo Express ao servir dist/index.html.
+ */
+function ottoSessionTokenPlugin(): Plugin {
+  return {
+    name: 'otto-session-token',
+    transformIndexHtml(html) {
+      const token = process.env.OTTO_SESSION_TOKEN;
+      if (!token || html.includes('name="otto-token"')) return html;
+      return {
+        html,
+        tags: [
+          {
+            tag: 'meta',
+            attrs: { name: 'otto-token', content: token },
+            injectTo: 'head-prepend' as const,
+          },
+        ],
+      };
+    },
+  };
+}
 
 export default defineConfig(() => {
   return {
-    plugins: [react(), tailwindcss()],
+    plugins: [react(), tailwindcss(), ottoSessionTokenPlugin()],
     resolve: {
       alias: {
-        '@': path.resolve(__dirname, '.'),
+        '@': PROJECT_ROOT,
       },
     },
     server: {

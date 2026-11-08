@@ -2,6 +2,9 @@
 
 import { IntentResult, MemoryItem, SystemTelemetry, WorkspaceItem, MemoryCategory } from '../types/otto';
 import { DataHubStorage } from './dataHubStorage';
+import { apiFetch, setAccessToken, readSessionToken, ApiAuthError } from './http';
+
+export { ApiAuthError };
 
 const DEFAULT_SYSTEM_TELEMETRY: SystemTelemetry = {
   platform: typeof navigator !== 'undefined' ? (navigator.platform || 'Linux x86_64') : 'Linux x86_64',
@@ -94,10 +97,21 @@ const DEFAULT_PLANETARY_MEMORIES: MemoryItem[] = [
   },
 ];
 
+
 export class ApiBridge {
+  /** Define manualmente o token de sessão (ex.: quando o app é servido por outro host). */
+  public static setAccessToken(token: string): void {
+    setAccessToken(token);
+  }
+
+  /** Token atualmente em uso (meta tag ou localStorage). */
+  public static getAccessToken(): string {
+    return readSessionToken();
+  }
+
   public static async getHealth() {
     try {
-      const res = await fetch('/api/health');
+      const res = await apiFetch('/api/health');
       const contentType = res.headers.get('content-type') || '';
       if (res.ok && contentType.includes('application/json')) {
         return await res.json();
@@ -110,7 +124,7 @@ export class ApiBridge {
 
   public static async getSystemInfo(): Promise<SystemTelemetry> {
     try {
-      const res = await fetch('/api/system/info');
+      const res = await apiFetch('/api/system/info');
       const contentType = res.headers.get('content-type') || '';
       if (res.ok && contentType.includes('application/json')) {
         const data = await res.json();
@@ -129,7 +143,7 @@ export class ApiBridge {
 
   public static async listFiles(subpath = ''): Promise<{ currentPath: string; items: WorkspaceItem[] }> {
     try {
-      const res = await fetch(`/api/fs/list?path=${encodeURIComponent(subpath)}`);
+      const res = await apiFetch(`/api/fs/list?path=${encodeURIComponent(subpath)}`);
       const contentType = res.headers.get('content-type') || '';
       if (res.ok && contentType.includes('application/json')) {
         return await res.json();
@@ -148,7 +162,7 @@ export class ApiBridge {
 
   public static async createFolder(name: string, targetPath = ''): Promise<{ success: boolean; message: string; path: string }> {
     try {
-      const res = await fetch('/api/fs/create-folder', {
+      const res = await apiFetch('/api/fs/create-folder', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, targetPath }),
@@ -169,7 +183,7 @@ export class ApiBridge {
 
   public static async writeFile(filename: string, content: string, targetPath = ''): Promise<{ success: boolean; message: string; path: string }> {
     try {
-      const res = await fetch('/api/fs/write-file', {
+      const res = await apiFetch('/api/fs/write-file', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ filename, content, targetPath }),
@@ -190,7 +204,7 @@ export class ApiBridge {
 
   public static async readFile(filename: string, targetPath = ''): Promise<{ success: boolean; filename: string; content: string }> {
     try {
-      const res = await fetch('/api/fs/read-file', {
+      const res = await apiFetch('/api/fs/read-file', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ filename, targetPath }),
@@ -211,7 +225,7 @@ export class ApiBridge {
 
   public static async deleteFile(filename: string, targetPath = ''): Promise<{ success: boolean; message: string }> {
     try {
-      const res = await fetch('/api/fs/delete-file', {
+      const res = await apiFetch('/api/fs/delete-file', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ filename, targetPath }),
@@ -231,7 +245,7 @@ export class ApiBridge {
 
   public static async renameFile(oldName: string, newName: string, targetPath = ''): Promise<{ success: boolean; message: string }> {
     try {
-      const res = await fetch('/api/fs/rename', {
+      const res = await apiFetch('/api/fs/rename', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ oldName, newName, targetPath }),
@@ -243,7 +257,7 @@ export class ApiBridge {
 
   public static async getFileDiff(filename: string, newContent?: string, targetPath = ''): Promise<{ success: boolean; filename: string; exists: boolean; originalContent: string; newContent: string; hasChanges: boolean }> {
     try {
-      const res = await fetch('/api/fs/diff', {
+      const res = await apiFetch('/api/fs/diff', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ filename, newContent, targetPath }),
@@ -259,7 +273,7 @@ export class ApiBridge {
 
   public static async getTextCodeStatus(): Promise<{ configured: boolean; provider: string; model: string; endpoint: string; hasCustomKey: boolean }> {
     try {
-      const res = await fetch('/api/text-code/status');
+      const res = await apiFetch('/api/text-code/status');
       if (res.ok) return await res.json();
     } catch {}
     return { configured: false, provider: 'TextCodeProvider (ROTA B)', model: 'openai/gpt-oss-120b', endpoint: 'https://api.groq.com/openai/v1', hasCustomKey: false };
@@ -267,7 +281,7 @@ export class ApiBridge {
 
   public static async configureTextCode(config: { apiKey?: string; apiUrl?: string; model?: string }) {
     try {
-      const res = await fetch('/api/text-code/config', {
+      const res = await apiFetch('/api/text-code/config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(config),
@@ -279,7 +293,7 @@ export class ApiBridge {
 
   public static async checkRoute(prompt: string) {
     try {
-      const res = await fetch('/api/text-code/route-check', {
+      const res = await apiFetch('/api/text-code/route-check', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt }),
@@ -291,7 +305,7 @@ export class ApiBridge {
 
   public static async generateTextCode(options: { messages: Array<{ role: string; content: string }>; model?: string; temperature?: number }) {
     try {
-      const res = await fetch('/api/text-code/generate', {
+      const res = await apiFetch('/api/text-code/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(options),
@@ -304,7 +318,7 @@ export class ApiBridge {
 
   public static async executeInSandbox(code: string, language: string, filename?: string, timeoutMs?: number) {
     try {
-      const res = await fetch('/api/sandbox/execute', {
+      const res = await apiFetch('/api/sandbox/execute', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code, language, filename, timeoutMs }),
@@ -321,7 +335,7 @@ export class ApiBridge {
     options?: any
   ): Promise<any> {
     try {
-      const res = await fetch('/api/agent/orchestrate', {
+      const res = await apiFetch('/api/agent/orchestrate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt, options }),
@@ -337,7 +351,7 @@ export class ApiBridge {
 
   public static async getAgentTaskState(taskId: string): Promise<any> {
     try {
-      const res = await fetch(`/api/agent/task/${taskId}`);
+      const res = await apiFetch(`/api/agent/task/${taskId}`);
       if (res.ok) return await res.json();
     } catch {}
     return null;
@@ -345,7 +359,7 @@ export class ApiBridge {
 
   public static async executeTerminal(command: string): Promise<{ command: string; stdout: string; stderr: string; exitCode: number; error: string | null }> {
     try {
-      const res = await fetch('/api/terminal/execute', {
+      const res = await apiFetch('/api/terminal/execute', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ command }),
@@ -368,7 +382,7 @@ export class ApiBridge {
 
   public static async executeAgentStep(planId: string, step: any, planTitle?: string): Promise<{ success: boolean; message: string; details?: any }> {
     try {
-      const res = await fetch('/api/agent/execute-step', {
+      const res = await apiFetch('/api/agent/execute-step', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ planId, step, planTitle }),
@@ -388,7 +402,7 @@ export class ApiBridge {
 
   public static async getMemories(): Promise<MemoryItem[]> {
     try {
-      const res = await fetch('/api/memory');
+      const res = await apiFetch('/api/memory');
       const contentType = res.headers.get('content-type') || '';
       if (res.ok && contentType.includes('application/json')) {
         const data = await res.json();
@@ -408,7 +422,7 @@ export class ApiBridge {
     extra?: { title?: string; category?: MemoryCategory; color?: string; tags?: string[] }
   ): Promise<MemoryItem[]> {
     try {
-      const res = await fetch('/api/memory', {
+      const res = await apiFetch('/api/memory', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ key, value, ...extra }),
@@ -426,7 +440,7 @@ export class ApiBridge {
 
   public static async deleteMemory(id: string): Promise<MemoryItem[]> {
     try {
-      const res = await fetch(`/api/memory/${id}`, { method: 'DELETE' });
+      const res = await apiFetch(`/api/memory/${id}`, { method: 'DELETE' });
       const contentType = res.headers.get('content-type') || '';
       if (res.ok && contentType.includes('application/json')) {
         const data = await res.json();
@@ -440,7 +454,7 @@ export class ApiBridge {
 
   public static async clearMemories(): Promise<void> {
     try {
-      await fetch('/api/memory', { method: 'DELETE' });
+      await apiFetch('/api/memory', { method: 'DELETE' });
     } catch {
       // Fallback
     }
@@ -448,7 +462,7 @@ export class ApiBridge {
 
   public static async getProjects(): Promise<any[]> {
     try {
-      const res = await fetch('/api/projects');
+      const res = await apiFetch('/api/projects');
       if (res.ok) {
         const data = await res.json();
         return data.projects || [];
@@ -463,7 +477,7 @@ export class ApiBridge {
 
   public static async createProject(project: { name: string; description?: string; color?: string; folderPath?: string; tags?: string[] }) {
     try {
-      const res = await fetch('/api/projects', {
+      const res = await apiFetch('/api/projects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(project),
@@ -475,7 +489,7 @@ export class ApiBridge {
 
   public static async deleteProject(id: string) {
     try {
-      const res = await fetch(`/api/projects/${id}`, { method: 'DELETE' });
+      const res = await apiFetch(`/api/projects/${id}`, { method: 'DELETE' });
       if (res.ok) return await res.json();
     } catch {}
     return { success: false };
@@ -483,7 +497,7 @@ export class ApiBridge {
 
   public static async getScratchpad(): Promise<Record<string, string>> {
     try {
-      const res = await fetch('/api/scratchpad');
+      const res = await apiFetch('/api/scratchpad');
       if (res.ok) {
         const data = await res.json();
         return data.scratchpad || {};
@@ -494,7 +508,7 @@ export class ApiBridge {
 
   public static async setScratchpad(entries: Record<string, string>) {
     try {
-      const res = await fetch('/api/scratchpad', {
+      const res = await apiFetch('/api/scratchpad', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ entries }),
@@ -506,7 +520,7 @@ export class ApiBridge {
 
   public static async clearScratchpad() {
     try {
-      const res = await fetch('/api/scratchpad', { method: 'DELETE' });
+      const res = await apiFetch('/api/scratchpad', { method: 'DELETE' });
       if (res.ok) return await res.json();
     } catch {}
     return { success: false };
@@ -514,7 +528,7 @@ export class ApiBridge {
 
   public static async searchImages(query: string): Promise<any> {
     try {
-      const res = await fetch(`/api/images/search?q=${encodeURIComponent(query)}`);
+      const res = await apiFetch(`/api/images/search?q=${encodeURIComponent(query)}`);
       if (res.ok) {
         return await res.json();
       }
@@ -524,7 +538,7 @@ export class ApiBridge {
 
   public static async getLiveKnowledge(query: string): Promise<any> {
     try {
-      const res = await fetch(`/api/web/knowledge?q=${encodeURIComponent(query)}`);
+      const res = await apiFetch(`/api/web/knowledge?q=${encodeURIComponent(query)}`);
       if (res.ok) {
         return await res.json();
       }
@@ -534,7 +548,7 @@ export class ApiBridge {
 
   public static async getArticlePreview(url: string, title?: string): Promise<{ title: string; extract: string; url: string }> {
     try {
-      const res = await fetch(`/api/web/article-preview?url=${encodeURIComponent(url)}&title=${encodeURIComponent(title || '')}`);
+      const res = await apiFetch(`/api/web/article-preview?url=${encodeURIComponent(url)}&title=${encodeURIComponent(title || '')}`);
       if (res.ok) {
         return await res.json();
       }
@@ -604,7 +618,7 @@ export class ApiBridge {
     };
 
     try {
-      const res = await fetch('/api/otto/intent', {
+      const res = await apiFetch('/api/otto/intent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -640,7 +654,7 @@ export class ApiBridge {
 
     public static async analyzeScreen(imageBase64: string, question?: string): Promise<{ speechResponse: string; analysis: string }> {
     try {
-      const res = await fetch('/api/vision/analyze', {
+      const res = await apiFetch('/api/vision/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ imageBase64, question }),
@@ -660,7 +674,7 @@ export class ApiBridge {
 
   public static async getGroqStatus(): Promise<{ configured: boolean; provider: string; model: string; status: string }> {
     try {
-      const res = await fetch('/api/groq/status');
+      const res = await apiFetch('/api/groq/status');
       if (res.ok) {
         return await res.json();
       }
@@ -674,7 +688,7 @@ export class ApiBridge {
     enableTools = true
   ): Promise<{ success: boolean; response: string; toolResults?: any[]; model?: string; userMessage?: string }> {
     try {
-      const res = await fetch('/api/groq/chat', {
+      const res = await apiFetch('/api/groq/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt, conversationHistory, enableTools }),
@@ -706,7 +720,7 @@ export class ApiBridge {
     }
   ): Promise<void> {
     try {
-      const res = await fetch('/api/groq/stream', {
+      const res = await apiFetch('/api/groq/stream', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt, conversationHistory }),

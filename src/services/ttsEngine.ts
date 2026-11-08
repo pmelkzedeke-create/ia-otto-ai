@@ -1,5 +1,7 @@
 // High-Quality Speech Synthesis Engine with ElevenLabs AI, Respeecher Space API, and Browser TTS Fallback
 
+import { apiFetch } from './http';
+
 export interface TTSOptions {
   volume?: number;
   rate?: number;
@@ -114,7 +116,7 @@ class TTSEngine {
 
   public async checkGeminiStatus(): Promise<{ available: boolean }> {
     try {
-      const res = await fetch('/api/tts/gemini/status');
+      const res = await apiFetch('/api/tts/gemini/status');
       if (res.ok) {
         const data = await res.json();
         this.geminiAvailable = Boolean(data.available);
@@ -126,7 +128,7 @@ class TTSEngine {
 
   public async fetchGeminiVoices(): Promise<GeminiVoice[]> {
     try {
-      const res = await fetch('/api/tts/gemini/voices');
+      const res = await apiFetch('/api/tts/gemini/voices');
       if (res.ok) {
         const data = await res.json();
         if (data.voices && data.voices.length > 0) {
@@ -191,7 +193,7 @@ class TTSEngine {
       if (this.customApiKey) {
         headers['x-elevenlabs-key'] = this.customApiKey;
       }
-      const res = await fetch('/api/tts/elevenlabs/status', { headers });
+      const res = await apiFetch('/api/tts/elevenlabs/status', { headers });
       if (res.ok) {
         const data = await res.json();
         this.elevenLabsAvailable = Boolean(data.available);
@@ -210,7 +212,7 @@ class TTSEngine {
       if (this.customRespeecherApiKey) {
         headers['x-respeecher-key'] = this.customRespeecherApiKey;
       }
-      const res = await fetch('/api/tts/respeecher/status', { headers });
+      const res = await apiFetch('/api/tts/respeecher/status', { headers });
       if (res.ok) {
         const data = await res.json();
         this.respeecherAvailable = Boolean(data.available);
@@ -233,7 +235,7 @@ class TTSEngine {
       if (this.customApiKey) {
         headers['x-elevenlabs-key'] = this.customApiKey;
       }
-      const res = await fetch('/api/tts/elevenlabs/voices', { headers });
+      const res = await apiFetch('/api/tts/elevenlabs/voices', { headers });
       if (res.ok) {
         const data = await res.json();
         if (data.quotaExceeded || data.available === false) {
@@ -256,7 +258,7 @@ class TTSEngine {
       if (this.customRespeecherApiKey) {
         headers['x-respeecher-key'] = this.customRespeecherApiKey;
       }
-      const res = await fetch('/api/tts/respeecher/voices', { headers });
+      const res = await apiFetch('/api/tts/respeecher/voices', { headers });
       if (res.ok) {
         const data = await res.json();
         if (data.voices && data.voices.length > 0) {
@@ -351,7 +353,7 @@ class TTSEngine {
     if (useGemini && this.geminiAvailable) {
       try {
         const voiceName = options.geminiVoiceId || 'Puck';
-        const res = await fetch('/api/tts/gemini', {
+        const res = await apiFetch('/api/tts/gemini', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -395,7 +397,7 @@ class TTSEngine {
           headers['x-elevenlabs-key'] = this.customApiKey;
         }
 
-        const res = await fetch('/api/tts/elevenlabs', {
+        const res = await apiFetch('/api/tts/elevenlabs', {
           method: 'POST',
           headers,
           body: JSON.stringify({
@@ -440,7 +442,7 @@ class TTSEngine {
           headers['x-respeecher-key'] = this.customRespeecherApiKey;
         }
 
-        const res = await fetch('/api/tts/respeecher', {
+        const res = await apiFetch('/api/tts/respeecher', {
           method: 'POST',
           headers,
           body: JSON.stringify({

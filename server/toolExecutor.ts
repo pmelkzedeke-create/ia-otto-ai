@@ -6,6 +6,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { CodeSandbox } from './codeSandbox.js';
 import { isCommandAllowed } from './security.js';
+import { isInside } from './paths.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -216,7 +217,7 @@ export async function executeGroqTool(name: string, rawArgs: string | Record<str
         const normalized = filename.replace(/\\/g, '/').replace(/^\/+/, '');
         const fullPath = path.resolve(WORKSPACE_DIR, normalized);
 
-        if (!fullPath.startsWith(WORKSPACE_DIR)) {
+        if (!isInside(WORKSPACE_DIR, fullPath)) {
           return { toolName: 'read_file', success: false, result: null, error: 'Acesso fora do workspace negado.' };
         }
 
@@ -247,7 +248,7 @@ export async function executeGroqTool(name: string, rawArgs: string | Record<str
         const normalized = filename.replace(/\\/g, '/').replace(/^\/+/, '');
         const fullPath = path.resolve(WORKSPACE_DIR, normalized);
 
-        if (!fullPath.startsWith(WORKSPACE_DIR)) {
+        if (!isInside(WORKSPACE_DIR, fullPath)) {
           return { toolName: 'write_file', success: false, result: null, error: 'Acesso fora do workspace negado.' };
         }
 
@@ -273,7 +274,7 @@ export async function executeGroqTool(name: string, rawArgs: string | Record<str
         const sanitized = folderName.replace(/[<>:"/\\|?*]/g, '').trim();
         const fullPath = path.resolve(WORKSPACE_DIR, sanitized);
 
-        if (!fullPath.startsWith(WORKSPACE_DIR)) {
+        if (!isInside(WORKSPACE_DIR, fullPath)) {
           return { toolName: 'create_folder', success: false, result: null, error: 'Acesso negado fora do workspace.' };
         }
 

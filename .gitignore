@@ -6,3 +6,11 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# Workspace de runtime do OTTO (dados gerados, não versionar)
+otto_workspace/.otto_token
+otto_workspace/.otto_memory.json
+otto_workspace/.otto_projects.json
+otto_workspace/.otto_scratchpad.json
+otto_workspace/README.txt
+otto_workspace/Projetos/

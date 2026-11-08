@@ -1,28 +1,56 @@
 import type { Request, Response, NextFunction } from 'express';
+import crypto from 'crypto';
+import { getSessionToken } from '../session.js';
 
 /**
- * Middleware de Autenticação Central do OTTO.
- * Exige que toda rota /api/ contenha o cabeçalho 'x-otto-token' com valor
- * correspondente à variável de ambiente OTTO_ACCESS_TOKEN.
- * Rotas estáticas do frontend permanecem acessíveis publicamente.
+ * Autenticação central do OTTO.
+ *
+ * - Todas as rotas /api exigem o header `x-otto-token` (ou `Authorization: Bearer <token>`).
+ * - Única exceção: /api/health (read-only, sem dados sensíveis).
+ * - O token nunca fica vazio: vem de OTTO_ACCESS_TOKEN ou é gerado/persistido no boot
+ *   (ver server/session.ts). O frontend recebe o token por <meta name="otto-token">.
  */
+const PUBLIC_API_PATHS = new Set(['/api/health']);
+
+function extractToken(req: Request): string {
+  const headerToken = req.headers['x-otto-token'];
+  if (typeof headerToken === 'string' && headerToken.trim()) return headerToken.trim();
+
+  const auth = req.headers.authorization;
+  if (typeof auth === 'string' && auth.toLowerCase().startsWith('bearer ')) {
+    return auth.slice(7).trim();
+  }
+  return '';
+}
+
 export function authMiddleware(req: Request, res: Response, next: NextFunction) {
-  // Rotas estáticas e recursos do frontend não requerem autenticação
-  if (!req.path.startsWith('/api')) {
-    return next();
+  if (!req.path.startsWith('/api')) return next();
+  if (PUBLIC_API_PATHS.has(req.path)) return next();
+
+  // Preflight CORS nunca é autenticado.
+  if (req.method === 'OPTIONS') return next();
+
+  const expected = getSessionToken();
+  if (!expected) {
+    return res.status(503).json({
+      error: 'Servidor sem token de sessão inicializado. Reinicie o OTTO.',
+    });
   }
 
-  const expectedToken = process.env.OTTO_ACCESS_TOKEN;
-
-  // Se OTTO_ACCESS_TOKEN estiver configurado no ambiente, exige x-otto-token válido
-  if (expectedToken) {
-    const providedToken = req.headers['x-otto-token'];
-    if (!providedToken || providedToken !== expectedToken) {
-      return res.status(401).json({
-        error: 'Não autorizado: Token de acesso ausente ou inválido no cabeçalho x-otto-token.',
-      });
-    }
+  const provided = extractToken(req);
+  if (!provided || provided.length !== expected.length) {
+    return res.status(401).json({
+      error:
+        'Não autorizado. Envie o header x-otto-token com o token de sessão do OTTO ' +
+        '(disponível em otto_workspace/.otto_token ou na meta tag otto-token da página).',
+    });
   }
 
-  next();
+  const a = Buffer.from(provided);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+    return res.status(401).json({ error: 'Não autorizado: token inválido.' });
+  }
+
+  return next();
 }

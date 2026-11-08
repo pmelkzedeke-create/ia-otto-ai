@@ -6,6 +6,7 @@
 
 import { ttsEngine } from './ttsEngine';
 import { audioAnalyzer } from './audioAnalyzer';
+import { apiFetch } from './http';
 
 export interface VoiceEngineCallbacks {
   onInterimResult?: (text: string) => void;
@@ -426,7 +427,7 @@ class VoiceEngine {
       reader.readAsDataURL(audioBlob);
       const dataUrl = await base64Promise;
 
-      const response = await fetch('/api/transcribe-audio', {
+      const response = await apiFetch('/api/transcribe-audio', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ audioBase64: dataUrl, mimeType }),

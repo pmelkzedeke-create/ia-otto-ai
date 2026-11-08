@@ -30,6 +30,7 @@ import {
 } from '../services/ttsEngine';
 import { desktopOverlayBridge } from '../services/desktopOverlayBridge';
 import { ApiBridge } from '../services/apiBridge';
+import { apiFetch } from '../services/http';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -116,7 +117,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     setKeySaving(true);
     setKeyStatusMsg(null);
     try {
-      const res = await fetch('/api/tts/elevenlabs/key', {
+      const res = await apiFetch('/api/tts/elevenlabs/key', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ apiKey: apiKeyInput.trim() }),
@@ -144,7 +145,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     setRespeecherSaving(true);
     setRespeecherStatusMsg(null);
     try {
-      const res = await fetch('/api/tts/respeecher/key', {
+      const res = await apiFetch('/api/tts/respeecher/key', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ apiKey: respeecherKeyInput.trim() }),

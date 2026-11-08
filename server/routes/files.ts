@@ -2,6 +2,7 @@ import { Router } from 'express';
 import fs from 'fs';
 import path from 'path';
 import { WORKSPACE_DIR } from '../memoryStore.js';
+import { isInside } from '../paths.js';
 
 export const filesRouter = Router();
 
@@ -72,7 +73,7 @@ filesRouter.get('/api/fs/list', (req, res) => {
     const relativePath = (req.query.path as string) || '';
     const targetDir = path.resolve(WORKSPACE_DIR, relativePath);
 
-    if (!targetDir.startsWith(WORKSPACE_DIR)) {
+    if (!isInside(WORKSPACE_DIR, targetDir)) {
       return res.status(403).json({ error: 'Acesso negado: fora do diretório do workspace' });
     }
 
@@ -115,7 +116,7 @@ filesRouter.post('/api/fs/create-folder', (req, res) => {
     const sanitized = name.replace(/[<>:"/\\|?*]/g, '').trim();
     const fullPath = path.resolve(WORKSPACE_DIR, targetPath, sanitized);
 
-    if (!fullPath.startsWith(WORKSPACE_DIR)) {
+    if (!isInside(WORKSPACE_DIR, fullPath)) {
       return res.status(403).json({ error: 'Acesso proibido fora do workspace' });
     }
 
@@ -145,7 +146,7 @@ filesRouter.post('/api/fs/write-file', (req, res) => {
     const normalizedRelative = filename.replace(/\\/g, '/').replace(/^\/+/, '');
     const fullPath = path.resolve(WORKSPACE_DIR, targetPath, normalizedRelative);
 
-    if (!fullPath.startsWith(WORKSPACE_DIR)) {
+    if (!isInside(WORKSPACE_DIR, fullPath)) {
       return res.status(403).json({ error: 'Acesso proibido fora do workspace' });
     }
 
@@ -176,7 +177,7 @@ filesRouter.post('/api/fs/read-file', (req, res) => {
 
     const normalizedRelative = filename.replace(/\\/g, '/').replace(/^\/+/, '');
     const fullPath = path.resolve(WORKSPACE_DIR, targetPath, normalizedRelative);
-    if (!fullPath.startsWith(WORKSPACE_DIR)) {
+    if (!isInside(WORKSPACE_DIR, fullPath)) {
       return res.status(403).json({ error: 'Acesso proibido fora do workspace' });
     }
 
@@ -205,7 +206,7 @@ filesRouter.post('/api/fs/delete-file', (req, res) => {
     }
 
     const fullPath = path.resolve(WORKSPACE_DIR, targetPath, filename);
-    if (!fullPath.startsWith(WORKSPACE_DIR)) {
+    if (!isInside(WORKSPACE_DIR, fullPath)) {
       return res.status(403).json({ error: 'Acesso proibido fora do workspace' });
     }
 
@@ -240,7 +241,7 @@ filesRouter.post('/api/fs/rename', (req, res) => {
     const oldPath = path.resolve(WORKSPACE_DIR, targetPath, oldName);
     const newPath = path.resolve(WORKSPACE_DIR, targetPath, newName);
 
-    if (!oldPath.startsWith(WORKSPACE_DIR) || !newPath.startsWith(WORKSPACE_DIR)) {
+    if (!isInside(WORKSPACE_DIR, oldPath) || !isInside(WORKSPACE_DIR, newPath)) {
       return res.status(403).json({ error: 'Acesso proibido fora do workspace' });
     }
 
@@ -268,7 +269,7 @@ filesRouter.post('/api/fs/diff', (req, res) => {
     }
 
     const fullPath = path.resolve(WORKSPACE_DIR, targetPath, filename);
-    if (!fullPath.startsWith(WORKSPACE_DIR)) {
+    if (!isInside(WORKSPACE_DIR, fullPath)) {
       return res.status(403).json({ error: 'Acesso proibido fora do workspace' });
     }
 

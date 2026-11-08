@@ -34,6 +34,7 @@ import { ttsEngine } from './services/ttsEngine';
 import { ApiBridge } from './services/apiBridge';
 import { ToolRouter } from './services/toolRouter';
 import { CheckCircle2, AlertTriangle, XCircle, Info, Activity, X } from 'lucide-react';
+import { apiFetch } from './services/http';
 
 
 export default function App() {
@@ -239,7 +240,7 @@ export default function App() {
 
     try {
       addActivity(`Buscando melhor vídeo sobre "${query}"...`, 'info');
-      const res = await fetch(`/api/youtube/search?q=${encodeURIComponent(query)}`);
+      const res = await apiFetch(`/api/youtube/search?q=${encodeURIComponent(query)}`);
       const data = await res.json();
       if (data && data.topVideo) {
         setYoutubeState({
