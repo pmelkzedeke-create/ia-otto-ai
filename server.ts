@@ -27,7 +27,14 @@ import { sandboxRouter } from './server/routes/sandbox.js';
 import { agentRouter } from './server/routes/agent.js';
 import { filesRouter } from './server/routes/files.js';
 import { slidesRouter } from './server/routes/slides.js';
-import { selectRelevantMemories } from './server/memoryStore.js';
+import {
+  loadMemories,
+  saveMemories,
+  selectRelevantMemories,
+  autoLearnUserMemory,
+  getMemoryStats,
+  ServerMemoryItem,
+} from './server/memoryStore.js';
 import { initSessionToken, isUsingExplicitToken } from './server/session.js';
 import { securityHeaders, apiRateLimit, errorHandler, notFoundApiHandler } from './server/middleware/httpHardening.js';
 
@@ -86,122 +93,6 @@ if (!fs.existsSync(path.join(WORKSPACE_DIR, 'README.txt'))) {
   }
 }
 
-// Memory file storage with Planetary categorization
-const MEMORY_FILE = path.join(WORKSPACE_DIR, '.otto_memory.json');
-
-export interface ServerMemoryItem {
-  id: string;
-  key: string;
-  value: string;
-  title?: string;
-  category?: 'KNOWLEDGE' | 'LEARNED' | 'RESEARCH' | 'SYSTEM';
-  summary?: string;
-  tags?: string[];
-  color?: string;
-  createdAt: string;
-}
-
-function loadMemories(): ServerMemoryItem[] {
-  try {
-    if (fs.existsSync(MEMORY_FILE)) {
-      const data = fs.readFileSync(MEMORY_FILE, 'utf-8');
-      const parsed = JSON.parse(data);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
-      }
-    }
-  } catch (err) {
-    console.error('Error reading memory file:', err);
-  }
-
-  // Pre-seed celestial planetary memory nodes (Knowledge, Learned, Research, System)
-  const initialMemories: ServerMemoryItem[] = [
-    {
-      id: 'mem_1',
-      key: 'ia_video',
-      title: 'IAs que Geram Vídeo',
-      value: 'Principais ferramentas neurais de vídeo: Sora (OpenAI), Runway Gen-3, Kling AI, Luma Dream Machine e Pika Labs.',
-      category: 'LEARNED',
-      color: '#34d399',
-      tags: ['ia', 'video', 'neural', 'sora', 'runway', 'kling'],
-      createdAt: new Date().toISOString(),
-    },
-    {
-      id: 'mem_2',
-      key: 'projeto_principal',
-      title: 'Projeto OTTO Core',
-      value: 'Projeto central de inteligência e controle de computador localizado na pasta Projetos.',
-      category: 'LEARNED',
-      color: '#a78bfa',
-      tags: ['projeto', 'workspace', 'codigo'],
-      createdAt: new Date().toISOString(),
-    },
-    {
-      id: 'mem_3',
-      key: 'capacidades_sistema',
-      title: 'Arquitetura & Sistema',
-      value: 'Controle de volume, navegador Chrome, terminal de comandos e execução de ferramentas em disco.',
-      category: 'KNOWLEDGE',
-      color: '#38bdf8',
-      tags: ['sistema', 'controle', 'voz'],
-      createdAt: new Date().toISOString(),
-    },
-    {
-      id: 'mem_4',
-      key: 'pesquisa_ia_video',
-      title: 'Pesquisa: IA de Vídeo',
-      value: 'Pesquisa realizada sobre as melhores IAs geradoras de vídeo no Google.',
-      category: 'RESEARCH',
-      color: '#f43f5e',
-      tags: ['pesquisa', 'google', 'ia', 'video'],
-      createdAt: new Date().toISOString(),
-    },
-    {
-      id: 'mem_5',
-      key: 'pesquisa_neymar',
-      title: 'Pesquisa: Neymar Imagens',
-      value: 'Pesquisa de imagens realizada no Google Imagens.',
-      category: 'RESEARCH',
-      color: '#fbbf24',
-      tags: ['pesquisa', 'imagens', 'google'],
-      createdAt: new Date().toISOString(),
-    },
-    {
-      id: 'mem_6',
-      key: 'pesquisa_carros',
-      title: 'Pesquisa: Fotos de Carros',
-      value: 'Pesquisa sobre imagens de carros e tecnologia automotiva na web.',
-      category: 'RESEARCH',
-      color: '#fb923c',
-      tags: ['pesquisa', 'carros', 'google'],
-      createdAt: new Date().toISOString(),
-    },
-    {
-      id: 'mem_7',
-      key: 'navegador_padrao',
-      title: 'Navegador Padrão',
-      value: 'Sempre preferir abrir links e pesquisas no navegador integrado ou aba dedicada.',
-      category: 'SYSTEM',
-      color: '#e879f9',
-      tags: ['preferencia', 'browser'],
-      createdAt: new Date().toISOString(),
-    },
-  ];
-
-  try {
-    fs.writeFileSync(MEMORY_FILE, JSON.stringify(initialMemories, null, 2), 'utf-8');
-  } catch {}
-
-  return initialMemories;
-}
-
-function saveMemories(memories: ServerMemoryItem[]) {
-  try {
-    fs.writeFileSync(MEMORY_FILE, JSON.stringify(memories, null, 2), 'utf-8');
-  } catch (err) {
-    console.error('Error saving memory file:', err);
-  }
-}
 
 // Initialize Gemini client if GEMINI_API_KEY is present
 let geminiAi: GoogleGenAI | null = null;
@@ -563,123 +454,6 @@ app.post('/api/transcribe-audio', async (req, res) => {
 // 5. Memory Management
 
 
-
-// Autonomous User Memory Learner (Learns conversational style, slangs, search topics, and system activity schedule)
-function autoLearnUserMemory(prompt: string, currentTime?: string) {
-  try {
-    const memories = loadMemories();
-    const p = prompt.toLowerCase().trim();
-    const timeStr = currentTime || new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-
-    // Real system telemetry & activity time
-    const uptimeSeconds = os.uptime();
-    const uptimeHours = (uptimeSeconds / 3600).toFixed(1);
-    const hour = parseInt(timeStr.split(':')[0], 10) || new Date().getHours();
-    const period =
-      hour >= 0 && hour < 6
-        ? 'Madrugada'
-        : hour >= 6 && hour < 12
-        ? 'Manhã'
-        : hour >= 12 && hour < 18
-        ? 'Tarde'
-        : 'Noite';
-
-    // 1. Detect conversational style and tone
-    const hasInformalSlang =
-      p.includes('tá ligado') ||
-      p.includes('ta ligado') ||
-      p.includes('bagulho') ||
-      p.includes('top') ||
-      p.includes('mano') ||
-      p.includes('cara') ||
-      p.includes('bora') ||
-      p.includes('show') ||
-      p.includes('manda ver') ||
-      p.includes('fala aí') ||
-      p.includes('fala ai') ||
-      p.includes('beleza') ||
-      p.includes('né');
-
-    const wantsRealExecution =
-      p.includes('de verdade') ||
-      p.includes('funcione de verdade') ||
-      p.includes('sem mentira') ||
-      p.includes('sem enrolação') ||
-      p.includes('direto');
-
-    if (hasInformalSlang || wantsRealExecution) {
-      const styleIdx = memories.findIndex((m) => m.key === 'estilo_conversa');
-      const styleDesc = wantsRealExecution
-        ? 'Comunicação autêntica, descontraída e com foco absoluto em execução real (gírias: "tá ligado", "bagulho", "top"). Exige ferramentas operando de verdade no computador, sem mockups ou simulações rasas.'
-        : 'Comunicação informal, autêntica e descontraída (gírias frequentes: "tá ligado", "bagulho", "top"). Prefere respostas objetivas, diretas e execução prática sem rodeios.';
-
-      const styleItem: ServerMemoryItem = {
-        id: styleIdx >= 0 ? memories[styleIdx].id : `mem_style_${Date.now()}`,
-        key: 'estilo_conversa',
-        title: 'Estilo de Conversa & Tom',
-        value: styleDesc,
-        category: 'LEARNED',
-        color: '#ffffff',
-        tags: ['estilo', 'personalidade', 'conversa', 'comunicacao', 'direto'],
-        summary: 'Preferência por tom informal, autenticidade e execução real imediata.',
-        createdAt: new Date().toISOString(),
-      };
-      if (styleIdx >= 0) memories[styleIdx] = styleItem;
-      else memories.unshift(styleItem);
-    }
-
-    // 2. Detect and register time routine from real system activity & uptime
-    const routineIdx = memories.findIndex((m) => m.key === 'rotina_horarios_sistema');
-    const routineItem: ServerMemoryItem = {
-      id: routineIdx >= 0 ? memories[routineIdx].id : `mem_routine_${Date.now()}`,
-      key: 'rotina_horarios_sistema',
-      title: 'Rotina & Atividade do Sistema',
-      value: `Atividade registrada no período da ${period} (horário local: ${timeStr}). Uptime do sistema operacional: ${uptimeHours} horas. O usuário interage com frequência neste horário para comandos diretos, pesquisas e geração autônoma.`,
-      category: 'SYSTEM',
-      color: '#e2e8f0',
-      tags: ['horario', 'atividade', 'sistema', 'rotina', 'telemetria'],
-      summary: `Pico de atividade na ${period} (${timeStr}) • Uptime: ${uptimeHours}h.`,
-      createdAt: new Date().toISOString(),
-    };
-    if (routineIdx >= 0) memories[routineIdx] = routineItem;
-    else memories.push(routineItem);
-
-    // 3. Detect searches and topics of interest
-    if (
-      p.includes('pesquise') ||
-      p.includes('procure') ||
-      p.includes('busca') ||
-      p.includes('tem ia') ||
-      p.includes('slide') ||
-      p.includes('site')
-    ) {
-      const topic = prompt
-        .replace(/(otto|pesquise|pesquisa|procure|busca|na web|na internet|no google|sobre|crie slides?|crie um slide|crie um site)\s*/gi, '')
-        .trim();
-      if (topic && topic.length > 2) {
-        const searchKey = `pesq_${topic.toLowerCase().replace(/[^a-z0-9]/g, '_').slice(0, 16)}`;
-        const existingIdx = memories.findIndex((m) => m.key === searchKey);
-        const searchItem: ServerMemoryItem = {
-          id: existingIdx >= 0 ? memories[existingIdx].id : `mem_${Date.now()}`,
-          key: searchKey,
-          title: `Interesse: ${topic.slice(0, 24)}`,
-          value: `Tópico explorado pelo usuário às ${timeStr} (${period}): "${topic}".`,
-          category: 'RESEARCH',
-          color: '#cbd5e1',
-          tags: ['pesquisa', 'interesse', 'web'],
-          summary: `Pesquisa solicitada: ${topic}`,
-          createdAt: new Date().toISOString(),
-        };
-        if (existingIdx >= 0) memories[existingIdx] = searchItem;
-        else memories.push(searchItem);
-      }
-    }
-
-    saveMemories(memories);
-  } catch (err) {
-    console.error('[autoLearnUserMemory] Warning:', err);
-  }
-}
 
 // Real Neural Slide & Presentation Generator using Real Gemini / Groq API with real disk persistence
 async function generateRealSlidesWithApi(userPrompt: string): Promise<{

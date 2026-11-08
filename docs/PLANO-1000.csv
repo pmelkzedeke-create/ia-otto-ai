@@ -249,21 +249,21 @@ OTTO-0247;05 · Streaming e latência;Compressão de áudio de entrada antes do 
 OTTO-0248;05 · Streaming e latência;Reduzir o custo do primeiro paint (above the fold enxuto);P2;M;aberto
 OTTO-0249;05 · Streaming e latência;Instrumentar Web Vitals (LCP, INP, CLS) de verdade;P2;M;aberto
 OTTO-0250;05 · Streaming e latência;Garantir que o proxy repasse o stream sem buffering (cache desligado);P1;M;aberto
-OTTO-0251;06 · Memória de longo prazo;Persistir a memória no servidor com esquema versionado;P1;L;aberto
+OTTO-0251;06 · Memória de longo prazo;Persistir a memória no servidor com esquema versionado;P1;L;concluído
 OTTO-0252;06 · Memória de longo prazo;Migrar o que hoje vive em localStorage para o servidor;P1;M;aberto
-OTTO-0253;06 · Memória de longo prazo;Tela de memória com busca, filtro, edição e exclusão;P1;M;aberto
-OTTO-0254;06 · Memória de longo prazo;Classificar memória por tipo: fato, preferência, projeto, temporária;P1;M;aberto
+OTTO-0253;06 · Memória de longo prazo;Tela de memória com busca, filtro, edição e exclusão;P1;M;parcial
+OTTO-0254;06 · Memória de longo prazo;Classificar memória por tipo: fato, preferência, projeto, temporária;P1;M;concluído
 OTTO-0255;06 · Memória de longo prazo;Expiração automática das memórias temporárias;P1;M;aberto
 OTTO-0256;06 · Memória de longo prazo;"Botão ""esquecer isso"" em cada mensagem";P1;M;aberto
 OTTO-0257;06 · Memória de longo prazo;Nunca gravar dado sensível (documento, cartão, senha);P1;M;aberto
-OTTO-0258;06 · Memória de longo prazo;Busca por palavra-chave com fallback simples;P1;M;aberto
-OTTO-0259;06 · Memória de longo prazo;Ordenar resultados por relevância e recência;P1;M;aberto
+OTTO-0258;06 · Memória de longo prazo;Busca por palavra-chave com fallback simples;P1;M;concluído
+OTTO-0259;06 · Memória de longo prazo;Ordenar resultados por relevância e recência;P1;M;concluído
 OTTO-0260;06 · Memória de longo prazo;Injetar memória no prompt com orçamento de tokens explícito;P1;M;aberto
 OTTO-0261;06 · Memória de longo prazo;Não injetar memória irrelevante (ruído piora a resposta);P1;M;aberto
 OTTO-0262;06 · Memória de longo prazo;Desfazer a exclusão de uma memória;P1;S;aberto
-OTTO-0263;06 · Memória de longo prazo;Testes cobrindo gravar, recuperar e apagar;P1;M;aberto
-OTTO-0264;06 · Memória de longo prazo;Limpar toda a memória em um clique, com confirmação dupla;P1;S;aberto
-OTTO-0265;06 · Memória de longo prazo;Deduplicar memórias semelhantes antes de gravar;P2;M;aberto
+OTTO-0263;06 · Memória de longo prazo;Testes cobrindo gravar, recuperar e apagar;P1;M;concluído
+OTTO-0264;06 · Memória de longo prazo;Limpar toda a memória em um clique, com confirmação dupla;P1;S;parcial
+OTTO-0265;06 · Memória de longo prazo;Deduplicar memórias semelhantes antes de gravar;P2;M;concluído
 OTTO-0266;06 · Memória de longo prazo;Pontuação de confiança por memória;P2;M;aberto
 OTTO-0267;06 · Memória de longo prazo;Mostrar a mensagem de origem de cada memória;P2;M;aberto
 OTTO-0268;06 · Memória de longo prazo;Importar e exportar memória em JSON;P2;M;aberto
@@ -275,18 +275,18 @@ OTTO-0273;06 · Memória de longo prazo;Auditoria: quando e por que cada memóri
 OTTO-0274;06 · Memória de longo prazo;Memória por projeto, com contextos separados;P2;M;aberto
 OTTO-0275;06 · Memória de longo prazo;Backup diário rotativo;P2;M;aberto
 OTTO-0276;06 · Memória de longo prazo;Restauração a partir de backup;P2;M;aberto
-OTTO-0277;06 · Memória de longo prazo;Índice por tags e filtro combinado;P2;M;aberto
+OTTO-0277;06 · Memória de longo prazo;Índice por tags e filtro combinado;P2;M;concluído
 OTTO-0278;06 · Memória de longo prazo;"Explicar ""por que o OTTO lembrou disso""";P2;M;aberto
 OTTO-0279;06 · Memória de longo prazo;"Memória negativa explícita (""não gosto de X"")";P2;M;aberto
-OTTO-0280;06 · Memória de longo prazo;Atualizar memória conflitante em vez de duplicar;P2;L;aberto
+OTTO-0280;06 · Memória de longo prazo;Atualizar memória conflitante em vez de duplicar;P2;L;concluído
 OTTO-0281;06 · Memória de longo prazo;Modo privado que não grava nada;P2;M;aberto
 OTTO-0282;06 · Memória de longo prazo;Preferências de UI na memória (tema, voz, velocidade);P2;S;aberto
 OTTO-0283;06 · Memória de longo prazo;Preferências por dispositivo versus por conta;P2;M;aberto
-OTTO-0284;06 · Memória de longo prazo;Visualização planetária com zoom, filtros e legenda;P2;L;aberto
-OTTO-0285;06 · Memória de longo prazo;Estados vazios explicando o que é memória e para que serve;P2;S;aberto
-OTTO-0286;06 · Memória de longo prazo;Painel de uso: quantidade, tamanho e crescimento;P2;S;aberto
-OTTO-0287;06 · Memória de longo prazo;Compatibilidade retroativa do formato ao migrar;P2;M;aberto
-OTTO-0288;06 · Memória de longo prazo;Documentar o modelo de dados de memória;P2;S;aberto
+OTTO-0284;06 · Memória de longo prazo;Visualização planetária com zoom, filtros e legenda;P2;L;parcial
+OTTO-0285;06 · Memória de longo prazo;Estados vazios explicando o que é memória e para que serve;P2;S;concluído
+OTTO-0286;06 · Memória de longo prazo;Painel de uso: quantidade, tamanho e crescimento;P2;S;parcial
+OTTO-0287;06 · Memória de longo prazo;Compatibilidade retroativa do formato ao migrar;P2;M;concluído
+OTTO-0288;06 · Memória de longo prazo;Documentar o modelo de dados de memória;P2;S;concluído
 OTTO-0289;06 · Memória de longo prazo;Revisão periódica das memórias não usadas em 90 dias;P3;M;aberto
 OTTO-0290;06 · Memória de longo prazo;Memória compartilhada entre dispositivos;P3;L;aberto
 OTTO-0291;06 · Memória de longo prazo;Resolução de conflito de sincronização, com regra explícita;P3;L;aberto

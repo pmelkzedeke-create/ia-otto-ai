@@ -1357,4 +1357,35 @@ As cinco regras que filtram **todos** os 1.000 itens:
 **Testes novos:** 28 (URL guard, histórico, timeout/retry) — suíte total em 52.
 **Validação:** `tsc` limpo · build OK · `curl` confirmando 400 para `127.0.0.1`, `169.254.169.254`, `192.168.x`, `localhost` e `file://` no proxy.
 
+### Onda 1 · lote 2 — memória reconstruída (11 concluídos, 4 parciais)
+
+| ID | O que foi feito | Onde |
+|---|---|---|
+| OTTO-0251 | Persistência normalizada, escrita atômica (tmp + rename) e cache por `mtime` | `server/memoryStore.ts` |
+| OTTO-0253 | Tela nova com busca, filtro por categoria, ordenação e exclusão em dois toques | `src/components/PlanetaryMemoryModal.tsx` |
+| OTTO-0254 | Quatro categorias claras + memória temporária em aba própria | idem |
+| OTTO-0258 | Busca sem acento, multi-termo, com contagem por categoria | idem |
+| OTTO-0259 | Ordenação (recentes, A–Z, categoria) e ranking com decaimento de recência | idem + `memoryStore` |
+| OTTO-0263 | 20 testes de memória (arquivo, cache, normalização, poda, ranking, aprendizado) | `tests/memoryStore.test.ts` |
+| OTTO-0265 | Dedupe e upsert por chave — atualizar nunca duplica | `server/routes/memory.ts` |
+| OTTO-0277 | Filtro combinado de categoria, termo e tags | UI |
+| OTTO-0280 | Memória conflitante é atualizada mantendo o `id` original | `memoryStore.ts` |
+| OTTO-0284 | Constelação em SVG com filtros e legenda (parcial: sem zoom) | UI |
+| OTTO-0285 | Estados vazios explicando o que é memória e como alimentá-la | UI |
+| OTTO-0286 | Cabeçalho com total, distribuição por categoria e última atualização | UI |
+| OTTO-0287 | Itens de formatos antigos continuam válidos via normalização | `memoryStore.ts` |
+| OTTO-0288 | Modelo, limites e fórmula de ranking documentados | `docs/MEMORIA.md` |
+
+**Ganho medido no código:** a view anterior rodava física de bolhas em `requestAnimationFrame`
+a 60 fps, com colisão entre **todos** os pares (O(n²)), 45 partículas e redimensionamento de
+canvas a cada `resize`. A nova não roda nada quando está parada e desenha no máximo 60 nós
+em SVG, uma única vez.
+
+**Duplicação eliminada:** `server.ts` mantinha uma segunda cópia de `loadMemories`,
+`saveMemories` e `autoLearnUserMemory` escrevendo o mesmo arquivo. As duas foram
+substituídas pela implementação única de `server/memoryStore.ts` (−8,6 mil caracteres).
+
+**Validação:** 20 testes novos (72 no total) · `tsc` limpo · build OK · `curl` em
+`/api/memory` devolvendo `stats` e upsert funcionando (7 → 8 itens, sem duplicar na segunda escrita).
+
 **Próximo lote sugerido:** OTTO-0005 (microfone negado), OTTO-0026/0027 (plano preso em "rodando"), OTTO-0033 (silêncio não encerra a escuta), OTTO-0031/0032 (links e cópia), OTTO-0601/0604 (a11y do chat), OTTO-0651 (manifest PWA).
