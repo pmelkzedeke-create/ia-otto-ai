@@ -886,7 +886,7 @@ export const OttoLiquidView: React.FC<OttoLiquidViewProps> = ({
           </div>
         )}
 
-        <div className="flex items-center gap-2 sm:gap-2.5">
+        <div className="otto-stagger flex items-center gap-2 sm:gap-2.5">
           {onOpenAgentMode && (
             <button
               onClick={onOpenAgentMode}
@@ -1195,7 +1195,7 @@ export const OttoLiquidView: React.FC<OttoLiquidViewProps> = ({
                     <X strokeWidth={isLight ? 2.5 : 1.75} className="w-3 h-3" />
                   </button>
                 </div>
-                <div className="space-y-2.5 text-xs font-sans max-h-36 overflow-y-auto scrollbar-none pr-1 relative z-10" data-testid="activity-feed-list">
+                <div className="otto-stagger space-y-2.5 text-xs font-sans max-h-36 overflow-y-auto scrollbar-none pr-1 relative z-10" data-testid="activity-feed-list">
                   {activities.slice(-4).map((act) => (
                     <div
                       key={act.id}
@@ -1594,7 +1594,7 @@ export const OttoLiquidView: React.FC<OttoLiquidViewProps> = ({
                     pesquisas na web e memória persistente.
                   </p>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full pt-2">
+                <div className="otto-stagger grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full pt-2">
                   {defaultLiquidChips.map((chip, idx) => {
                     const IconComp = chip.icon;
                     return (

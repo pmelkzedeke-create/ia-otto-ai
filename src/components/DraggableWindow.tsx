@@ -204,7 +204,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         minWidth: `${minWidth}px`,
         maxWidth: `${maxWidth}px`,
       }}
-      className={`fixed touch-none font-sans transition-shadow select-none animate-fade-in ${
+      className={`otto-pop-in fixed touch-none font-sans transition-shadow select-none ${
         isDragging ? 'cursor-grabbing opacity-95 scale-[1.01]' : ''
       } ${isResizing ? 'cursor-se-resize opacity-95' : ''} ${className}`}
       onClick={() => setCurrentZIndex((prev) => Math.max(prev, 55))}
