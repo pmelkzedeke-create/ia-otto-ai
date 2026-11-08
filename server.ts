@@ -1,4 +1,5 @@
 import express from 'express';
+import http from 'http';
 import path from 'path';
 import fs from 'fs';
 import os from 'os';
@@ -2525,10 +2526,19 @@ function injectSessionToken(html: string): string {
 async function startServer() {
   app.use(notFoundApiHandler);
 
+  // Servidor HTTP único: o Vite (dev) se acopla a ele em vez de abrir a porta
+  // extra 24678 do WebSocket de HMR — que aparecia como um preview inválido.
+  const httpServer = http.createServer(app);
+
   if (process.env.NODE_ENV !== 'production') {
     const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: {
+        middlewareMode: true,
+        // Em Vite 8 quem abre a porta extra (24678) é `server.ws`, não `hmr`.
+        // false desliga o WebSocket; quando ligado, ele usa o MESMO servidor HTTP.
+        ws: process.env.DISABLE_HMR === 'true' ? false : { server: httpServer },
+      },
       appType: 'spa',
     });
     app.use(vite.middlewares);
@@ -2553,7 +2563,7 @@ async function startServer() {
   // Middleware de erro global (sempre por último)
   app.use(errorHandler);
 
-  app.listen(PORT, '0.0.0.0', () => {
+  httpServer.listen(PORT, '0.0.0.0', () => {
     console.log(`[OTTO] Server running on http://localhost:${PORT}`);
     console.log(`[OTTO] Workspace: ${WORKSPACE_DIR}`);
     console.log(
