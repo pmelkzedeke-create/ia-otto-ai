@@ -843,7 +843,6 @@ export default function App() {
         settings={settings}
         onOpenSettings={() => setShowSettingsModal(true)}
         onOpenMemory={() => setShowMemoryModal(true)}
-        onOpenAgentMode={() => setShowAgentModal(true)}
         onOpenDataHub={() => setShowDataHubModal(true)}
         activePlan={currentPlan}
         interimTranscript={interimTranscript}

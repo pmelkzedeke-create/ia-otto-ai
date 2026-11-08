@@ -176,7 +176,6 @@ interface OttoLiquidBetaViewProps {
   settings: OttoSettings;
   onOpenSettings: () => void;
   onOpenMemory: () => void;
-  onOpenAgentMode?: () => void;
   onOpenDataHub?: () => void;
   activePlan?: AgentTaskPlan | null;
   interimTranscript?: string;
@@ -252,7 +251,6 @@ export const OttoLiquidView: React.FC<OttoLiquidViewProps> = ({
   settings,
   onOpenSettings,
   onOpenMemory,
-  onOpenAgentMode,
   onOpenDataHub,
   activePlan,
   interimTranscript,
@@ -887,31 +885,6 @@ export const OttoLiquidView: React.FC<OttoLiquidViewProps> = ({
         )}
 
         <div className="otto-stagger flex items-center gap-2 sm:gap-2.5">
-          {onOpenAgentMode && (
-            <button
-              onClick={onOpenAgentMode}
-              className={`border rounded-full px-3 py-1.5 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-md active:scale-95 ${
-                isLight
-                  ? activePlan && activePlan.status === 'running'
-                    ? 'bg-slate-950 text-white border-slate-950 shadow-md animate-pulse'
-                    : 'bg-white/80 hover:bg-white ot-border text-slate-900'
-                  : activePlan && activePlan.status === 'running'
-                  ? 'bg-white/25 border-white text-white shadow-[0_0_15px_rgba(255,255,255,0.4)] animate-pulse'
-                  : 'backdrop-blur-xl bg-white/[0.08] hover:bg-white/[0.16] border-white/20 text-slate-200'
-              }`}
-              title="Modo Agente: Execução autônoma de tarefas complexas multi-etapas"
-            >
-              <Zap
-                strokeWidth={iconStroke}
-                fill={isLight ? 'currentColor' : 'none'}
-                className="w-3.5 h-3.5"
-              />
-              <span className="hidden sm:inline">Agente</span>
-              {activePlan && (
-                <span className={`w-1.5 h-1.5 rounded-full ${isLight ? 'bg-white' : 'bg-white'}`} />
-              )}
-            </button>
-          )}
 
           <button
             onClick={onOpenMemory}
