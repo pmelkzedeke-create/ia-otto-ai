@@ -818,7 +818,7 @@ export default function App() {
     showMemoryModal || showSettingsModal || showAgentModal || showDataHubModal || showPreviewModal;
 
   return (
-    <div className={`otto-shell h-[100dvh] w-screen relative overflow-hidden select-none font-sans transition-colors duration-300 ${isLightMode ? 'bg-[#edf1f7] text-slate-900 theme-light' : 'bg-[#090a0d] text-slate-100'}`}>
+    <div className={`otto-shell h-[100dvh] w-screen relative overflow-hidden select-none font-sans transition-colors duration-300 ${isLightMode ? 'otto-light-bg text-slate-900 theme-light' : 'bg-[#090a0d] text-slate-100'}`}>
       <div
         className="h-full w-full origin-center transition-transform duration-500 ease-out"
         style={{

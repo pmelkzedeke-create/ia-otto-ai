@@ -643,7 +643,7 @@ export const OttoLiquidView: React.FC<OttoLiquidViewProps> = ({
       }}
       onDrop={handleWindowDrop}
       className={`relative w-full h-full flex flex-col justify-between overflow-hidden select-none font-sans transition-colors duration-300 ${
-        isLight ? 'bg-[#edf1f7] text-slate-900 theme-light' : 'bg-[#090a0d] text-white'
+        isLight ? 'otto-light-bg text-slate-900 theme-light' : 'bg-[#090a0d] text-white'
       }`}
     >
       {/* Global Drag and Drop Ingestion Overlay */}
@@ -664,7 +664,7 @@ export const OttoLiquidView: React.FC<OttoLiquidViewProps> = ({
         className="absolute inset-0 pointer-events-none transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]"
         style={{
           background: isLight
-            ? 'radial-gradient(ellipse 70% 65% at 50% 30%, rgba(255, 255, 255, 0.95) 0%, rgba(240, 244, 250, 0.75) 60%, #edf1f7 100%)'
+            ? 'radial-gradient(ellipse 75% 70% at 50% 26%, rgba(255, 255, 255, 0.98) 0%, rgba(244, 247, 255, 0.72) 55%, rgba(238, 242, 252, 0.35) 78%, transparent 100%)'
             : isChatFullscreen
             ? 'radial-gradient(ellipse 80% 80% at 50% 20%, rgba(40, 44, 52, 0.45) 0%, rgba(18, 20, 26, 0.85) 60%, #08090c 100%)'
             : 'radial-gradient(ellipse 70% 65% at 50% 40%, rgba(100, 110, 125, 0.4) 0%, rgba(40, 44, 52, 0.75) 45%, rgba(18, 20, 25, 0.98) 85%, #08090c 100%)',
@@ -678,7 +678,7 @@ export const OttoLiquidView: React.FC<OttoLiquidViewProps> = ({
         }`}
         style={{
           background: isLight
-            ? 'radial-gradient(circle, rgba(255, 255, 255, 0.8) 0%, rgba(220, 230, 245, 0.4) 50%, transparent 75%)'
+            ? 'radial-gradient(circle, rgba(255, 255, 255, 0.92) 0%, rgba(199, 210, 254, 0.32) 42%, rgba(186, 230, 253, 0.18) 62%, transparent 78%)'
             : 'radial-gradient(circle, rgba(255, 255, 255, 0.12) 0%, rgba(200, 210, 225, 0.04) 50%, transparent 75%)',
         }}
       />
@@ -686,7 +686,7 @@ export const OttoLiquidView: React.FC<OttoLiquidViewProps> = ({
       {/* 1. TOP BAR */}
       <header className={`relative w-full px-3 sm:px-8 py-2.5 sm:py-4 flex items-center justify-between z-30 shrink-0 border-b gap-1.5 sm:gap-4 overflow-hidden transition-all ${
         isLight
-          ? 'border-slate-300/80 glass-medium-white text-slate-900 shadow-sm'
+          ? 'ot-border glass-medium-white text-slate-900'
           : 'border-white/[0.12] glass-medium text-white'
       }`}>
         {/* Left Side: O T T O + Controls / Fullscreen Chat Controls */}
@@ -706,7 +706,7 @@ export const OttoLiquidView: React.FC<OttoLiquidViewProps> = ({
                 isLight
                   ? showSystemPanel
                     ? 'bg-slate-950 text-white shadow-md border border-slate-950'
-                    : 'bg-white/80 border border-slate-300 text-slate-900 hover:bg-white shadow-sm'
+                    : 'bg-white/80 border ot-border text-slate-900 hover:bg-white shadow-sm'
                   : showSystemPanel
                   ? 'bg-white/20 border-white/80 text-white shadow-[0_0_20px_rgba(255,255,255,0.3)]'
                   : 'text-slate-200 shadow-[0_4px_16px_rgba(0,0,0,0.3)] liquid-glass-btn'
@@ -753,7 +753,7 @@ export const OttoLiquidView: React.FC<OttoLiquidViewProps> = ({
                   isLight
                     ? showHistoryDrawer
                       ? 'bg-slate-950 text-white border border-slate-950'
-                      : 'bg-white/80 border border-slate-300 text-slate-900 hover:bg-white'
+                      : 'bg-white/80 border ot-border text-slate-900 hover:bg-white'
                     : showHistoryDrawer
                     ? 'bg-white/25 border-white text-white shadow-[0_0_15px_rgba(255,255,255,0.3)]'
                     : 'text-slate-200 liquid-glass-btn'
@@ -780,7 +780,7 @@ export const OttoLiquidView: React.FC<OttoLiquidViewProps> = ({
                   isLight
                     ? isSearchOpen || searchQuery.trim() || filterType !== 'all'
                       ? 'bg-slate-950 text-white border border-slate-950'
-                      : 'bg-white/80 border border-slate-300 text-slate-900 hover:bg-white'
+                      : 'bg-white/80 border ot-border text-slate-900 hover:bg-white'
                     : isSearchOpen || searchQuery.trim() || filterType !== 'all'
                     ? 'bg-white/25 border-white text-white shadow-[0_0_15px_rgba(255,255,255,0.35)] ring-1 ring-white/50'
                     : 'text-slate-200 liquid-glass-btn'
@@ -803,7 +803,7 @@ export const OttoLiquidView: React.FC<OttoLiquidViewProps> = ({
                   onClick={() => setShowThemePicker((prev) => !prev)}
                   className={`rounded-full p-1.5 sm:px-3 sm:py-1.5 text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer shadow-md active:scale-95 whitespace-nowrap ${
                     isLight
-                      ? 'bg-white/80 border border-slate-300 text-slate-900 hover:bg-white'
+                      ? 'bg-white/80 border ot-border text-slate-900 hover:bg-white'
                       : 'liquid-glass-btn text-slate-200'
                   }`}
                   title="Alterar cores do chat"
@@ -818,7 +818,7 @@ export const OttoLiquidView: React.FC<OttoLiquidViewProps> = ({
 
                 {showThemePicker && (
                   <div className={`absolute left-0 mt-2 p-3 rounded-[24px] z-50 flex flex-col gap-2 min-w-[170px] shadow-2xl ${
-                    isLight ? 'glass-strong-white border border-slate-300' : 'liquid-glass-menu'
+                    isLight ? 'glass-strong-white ot-border border' : 'liquid-glass-menu'
                   }`}>
                     <span className="text-[10px] font-mono tracking-widest text-slate-500 dark:text-slate-400 uppercase px-1">
                       Cores Monocromáticas
@@ -839,7 +839,7 @@ export const OttoLiquidView: React.FC<OttoLiquidViewProps> = ({
                           }`}
                         >
                           <span
-                            className="w-3 h-3 rounded-full shrink-0 shadow-sm border border-slate-300 dark:border-white/30"
+                            className="w-3 h-3 rounded-full shrink-0 shadow-sm border ot-border dark:border-white/30"
                             style={{ backgroundColor: theme.dotColor }}
                           />
                           <span className="truncate">{theme.name}</span>
@@ -894,7 +894,7 @@ export const OttoLiquidView: React.FC<OttoLiquidViewProps> = ({
                 isLight
                   ? activePlan && activePlan.status === 'running'
                     ? 'bg-slate-950 text-white border-slate-950 shadow-md animate-pulse'
-                    : 'bg-white/80 hover:bg-white border-slate-300 text-slate-900'
+                    : 'bg-white/80 hover:bg-white ot-border text-slate-900'
                   : activePlan && activePlan.status === 'running'
                   ? 'bg-white/25 border-white text-white shadow-[0_0_15px_rgba(255,255,255,0.4)] animate-pulse'
                   : 'backdrop-blur-xl bg-white/[0.08] hover:bg-white/[0.16] border-white/20 text-slate-200'
@@ -917,7 +917,7 @@ export const OttoLiquidView: React.FC<OttoLiquidViewProps> = ({
             onClick={onOpenMemory}
             className={`border rounded-full px-3 py-1.5 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-md active:scale-95 ${
               isLight
-                ? 'bg-white/80 hover:bg-white border-slate-300 text-slate-900'
+                ? 'bg-white/80 hover:bg-white ot-border text-slate-900'
                 : 'backdrop-blur-xl bg-white/[0.08] hover:bg-white/[0.16] border-white/20 text-slate-200'
             }`}
             title="Acessar Memória Contextual, Temporária e Projetos"
@@ -935,7 +935,7 @@ export const OttoLiquidView: React.FC<OttoLiquidViewProps> = ({
               onClick={onOpenDataHub}
               className={`border rounded-full px-3 py-1.5 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-md active:scale-95 ${
                 isLight
-                  ? 'bg-white/80 hover:bg-white border-slate-300 text-slate-900'
+                  ? 'bg-white/80 hover:bg-white ot-border text-slate-900'
                   : 'backdrop-blur-xl bg-white/[0.08] hover:bg-white/[0.16] border-white/20 text-slate-200 hover:text-white'
               }`}
               title="Acessar o OTTO Data Hub (Arquivos, pastas e análise inteligente)"
@@ -954,7 +954,7 @@ export const OttoLiquidView: React.FC<OttoLiquidViewProps> = ({
               onClick={() => setIsChatFullscreen(true)}
               className={`border px-3.5 py-1.5 rounded-full flex items-center gap-2 text-xs font-sans font-semibold transition-all duration-300 cursor-pointer active:scale-95 shadow-md ${
                 isLight
-                  ? 'bg-white/80 hover:bg-white border-slate-300 text-slate-900'
+                  ? 'bg-white/80 hover:bg-white ot-border text-slate-900'
                   : 'group relative backdrop-blur-2xl bg-white/[0.08] hover:bg-white/[0.15] border-white/[0.18] text-slate-200 shadow-[0_4px_16px_rgba(0,0,0,0.3)]'
               }`}
               title="Abrir Chat em tela cheia"
@@ -972,7 +972,7 @@ export const OttoLiquidView: React.FC<OttoLiquidViewProps> = ({
               onClick={() => setIsChatFullscreen(false)}
               className={`border rounded-full px-3.5 py-1.5 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-md active:scale-95 ${
                 isLight
-                  ? 'bg-white/80 hover:bg-white border-slate-300 text-slate-900'
+                  ? 'bg-white/80 hover:bg-white ot-border text-slate-900'
                   : 'backdrop-blur-xl bg-white/[0.08] hover:bg-white/[0.16] border-white/20 text-slate-200 hover:text-white'
               }`}
               title="Voltar para a tela inicial"
@@ -1006,7 +1006,7 @@ export const OttoLiquidView: React.FC<OttoLiquidViewProps> = ({
             onClick={onOpenSettings}
             className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full border flex items-center justify-center transition-all cursor-pointer shadow-md active:scale-95 shrink-0 ${
               isLight
-                ? 'bg-white/80 hover:bg-white border-slate-300 text-slate-900'
+                ? 'bg-white/80 hover:bg-white ot-border text-slate-900'
                 : 'backdrop-blur-xl bg-white/[0.08] hover:bg-white/[0.15] border-white/20 text-white/80 hover:text-white'
             }`}
             title="Configurações (Personalidade, Permissões, Voz)"
@@ -1022,7 +1022,7 @@ export const OttoLiquidView: React.FC<OttoLiquidViewProps> = ({
             onClick={toggleListening}
             className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full border flex items-center justify-center transition-all cursor-pointer shadow-md active:scale-95 shrink-0 ${
               isLight
-                ? 'bg-white/80 hover:bg-white border-slate-300 text-slate-900'
+                ? 'bg-white/80 hover:bg-white ot-border text-slate-900'
                 : 'backdrop-blur-xl bg-white/[0.08] hover:bg-white/[0.15] border-white/20 text-white/80 hover:text-white'
             }`}
             title={state === 'LISTENING' ? 'Pausar microfone' : state === 'SPEAKING' ? 'Interromper fala' : 'Ativar microfone'}
@@ -1037,14 +1037,14 @@ export const OttoLiquidView: React.FC<OttoLiquidViewProps> = ({
         <div
           className={`fixed inset-y-0 left-0 top-[57px] w-72 z-40 transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] flex flex-col p-4 shadow-2xl ${
             isLight
-              ? 'glass-strong-white border-r border-slate-300/80 text-slate-900'
+              ? 'glass-strong-white ot-border border-r text-slate-900'
               : 'glass-strong border-r border-white/15 text-white'
           } ${
             isChatFullscreen && showHistoryDrawer ? 'translate-x-0' : '-translate-x-full'
           }`}
         >
           <div className={`flex items-center justify-between pb-3 border-b mb-3 ${
-            isLight ? 'border-slate-300' : 'border-white/[0.08]'
+            isLight ? 'ot-border' : 'border-white/[0.08]'
           }`}>
             <div className={`flex items-center gap-2 text-xs font-bold ${
               isLight ? 'text-slate-900' : 'text-slate-300'
@@ -1094,7 +1094,7 @@ export const OttoLiquidView: React.FC<OttoLiquidViewProps> = ({
               placeholder="Filtrar conversas..."
               className={`w-full pl-8 pr-7 py-1.5 rounded-xl text-xs transition-all font-sans focus:outline-none ${
                 isLight
-                  ? 'bg-white border border-slate-300 text-slate-900 placeholder:text-slate-500 focus:border-slate-950 shadow-sm'
+                  ? 'bg-white border ot-border text-slate-900 placeholder:text-slate-500 focus:border-slate-950 shadow-sm'
                   : 'glass-light border border-white/10 text-slate-200 placeholder:text-slate-500 focus:border-white/60'
               }`}
             />
@@ -1169,7 +1169,7 @@ export const OttoLiquidView: React.FC<OttoLiquidViewProps> = ({
             >
               <div className={`rounded-[28px] p-5 flex flex-col gap-3 ${
                 isLight
-                  ? 'glass-medium-white border border-slate-300 shadow-xl text-slate-900'
+                  ? 'glass-medium-white border ot-border shadow-xl text-slate-900'
                   : 'glass-medium liquid-refraction shadow-[0_20px_50px_rgba(0,0,0,0.7)] text-white'
               }`}>
                 <div className="flex items-center justify-between relative z-10">
@@ -1218,7 +1218,7 @@ export const OttoLiquidView: React.FC<OttoLiquidViewProps> = ({
 
               <div className={`rounded-[28px] p-5 flex flex-col gap-3 ${
                 isLight
-                  ? 'glass-medium-white border border-slate-300 shadow-xl text-slate-900'
+                  ? 'glass-medium-white border ot-border shadow-xl text-slate-900'
                   : 'glass-medium liquid-refraction shadow-[0_20px_50px_rgba(0,0,0,0.7)] text-white'
               }`}>
                 <div className={`text-xs font-bold tracking-wider uppercase mb-0.5 relative z-10 ${
@@ -1436,7 +1436,7 @@ export const OttoLiquidView: React.FC<OttoLiquidViewProps> = ({
           {isSearchOpen && (
             <div className={`w-full mb-3 p-3.5 rounded-[24px] shadow-2xl animate-fade-in flex flex-col gap-2.5 shrink-0 z-30 ${
               isLight
-                ? 'glass-medium-white border border-slate-300 shadow-[0_10px_35px_rgba(0,0,0,0.08)] text-slate-900'
+                ? 'glass-medium-white border ot-border shadow-[0_10px_35px_rgba(0,0,0,0.08)] text-slate-900'
                 : 'glass-medium border border-white/20 shadow-[0_10px_35px_rgba(0,0,0,0.6)] text-white'
             }`}>
               <div className="flex items-center gap-2">
@@ -1455,7 +1455,7 @@ export const OttoLiquidView: React.FC<OttoLiquidViewProps> = ({
                     placeholder="Buscar comandos anteriores, respostas ou ações..."
                     className={`w-full pl-9 pr-8 py-2 rounded-xl text-xs sm:text-sm font-sans focus:outline-none transition-all ${
                       isLight
-                        ? 'bg-white border border-slate-300 text-slate-950 placeholder:text-slate-500 focus:border-slate-950 shadow-sm'
+                        ? 'bg-white border ot-border text-slate-950 placeholder:text-slate-500 focus:border-slate-950 shadow-sm'
                         : 'bg-white/[0.06] border border-white/10 text-white placeholder:text-slate-400 focus:border-white'
                     }`}
                   />
@@ -1578,7 +1578,7 @@ export const OttoLiquidView: React.FC<OttoLiquidViewProps> = ({
               <div className="h-full flex flex-col items-center justify-center text-center px-4 max-w-lg mx-auto space-y-6 animate-fade-in">
                 <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-2xl ${
                   isLight
-                    ? 'bg-white border border-slate-300 shadow-md text-slate-900'
+                    ? 'bg-white border ot-border shadow-md text-slate-900'
                     : 'backdrop-blur-2xl bg-white/[0.08] border border-white/20 text-white'
                 }`}>
                   <Sparkles
@@ -1603,7 +1603,7 @@ export const OttoLiquidView: React.FC<OttoLiquidViewProps> = ({
                         onClick={() => handleProcessCommand(chip.query)}
                         className={`p-3.5 rounded-2xl text-left transition-all cursor-pointer shadow-md group flex items-start gap-3 ${
                           isLight
-                            ? 'bg-white/90 hover:bg-white border border-slate-300 hover:border-slate-500 text-slate-950 shadow-sm'
+                            ? 'ot-chip text-slate-900'
                             : 'backdrop-blur-xl bg-white/[0.05] hover:bg-white/[0.12] border border-white/[0.12] hover:border-white/40 text-slate-200'
                         }`}
                       >
@@ -1611,7 +1611,7 @@ export const OttoLiquidView: React.FC<OttoLiquidViewProps> = ({
                           strokeWidth={iconStroke}
                           fill={isLight ? 'currentColor' : 'none'}
                           className={`w-4 h-4 mt-0.5 shrink-0 group-hover:scale-110 transition-transform ${
-                            isLight ? 'text-slate-950' : 'text-white'
+                            isLight ? 'ot-chip__icon' : 'text-white'
                           }`}
                         />
                         <span className={`text-xs font-semibold leading-snug ${
@@ -1628,7 +1628,7 @@ export const OttoLiquidView: React.FC<OttoLiquidViewProps> = ({
               <div className="h-full flex flex-col items-center justify-center text-center p-8 max-w-md mx-auto animate-fade-in">
                 <div className={`w-12 h-12 rounded-2xl border flex items-center justify-center mb-3 shadow-inner ${
                   isLight
-                    ? 'bg-slate-100 border-slate-300 text-slate-700'
+                    ? 'bg-slate-100 ot-border text-slate-700'
                     : 'bg-white/[0.05] border-white/10 text-slate-400'
                 }`}>
                   <Search strokeWidth={iconStroke} className="w-6 h-6" />
@@ -1674,9 +1674,9 @@ export const OttoLiquidView: React.FC<OttoLiquidViewProps> = ({
                   <div
                     className={`relative text-sm leading-relaxed max-w-[85%] sm:max-w-[78%] px-4 sm:px-5 py-3 rounded-3xl transition-all ${
                       msg.sender === 'user'
-                        ? `${currentTheme.userBubbleGrad} rounded-tr-md font-sans`
+                        ? `${isLight ? 'otto-bubble-user-light' : currentTheme.userBubbleGrad} rounded-tr-md font-sans`
                         : isLight
-                        ? 'bg-white/95 border border-slate-200/90 text-slate-950 rounded-tl-md shadow-[0_4px_20px_rgba(0,0,0,0.06)] font-medium'
+                        ? 'otto-bubble-otto-light rounded-tl-md font-medium'
                         : 'backdrop-blur-2xl bg-white/[0.06] border border-white/[0.12] text-slate-100 rounded-tl-md shadow-[0_4px_20px_rgba(0,0,0,0.3)]'
                     }`}
                   >
@@ -1686,7 +1686,7 @@ export const OttoLiquidView: React.FC<OttoLiquidViewProps> = ({
 
                     {msg.attachedImage && (
                       <div className={`mt-2.5 max-w-sm rounded-2xl overflow-hidden border shadow-xl ${
-                        isLight ? 'border-slate-300 bg-white' : 'border-white/20 bg-black/60'
+                        isLight ? 'ot-border bg-white' : 'border-white/20 bg-black/60'
                       }`}>
                         <img
                           src={msg.attachedImage.dataUrl}
@@ -1695,7 +1695,7 @@ export const OttoLiquidView: React.FC<OttoLiquidViewProps> = ({
                         />
                         {msg.attachedImage.name && (
                           <div className={`p-2 px-3 text-[10px] font-mono truncate border-t flex items-center justify-between ${
-                            isLight ? 'text-slate-800 bg-slate-100 border-slate-200' : 'text-slate-300 bg-white/[0.05] border-white/10'
+                            isLight ? 'text-slate-800 bg-slate-50 ot-border' : 'text-slate-300 bg-white/[0.05] border-white/10'
                           }`}>
                             <span className="truncate">{msg.attachedImage.name}</span>
                             {msg.attachedImage.size && (
@@ -1761,7 +1761,7 @@ export const OttoLiquidView: React.FC<OttoLiquidViewProps> = ({
                             key={i}
                             className={`px-2 py-0.5 rounded-lg border flex items-center gap-1 shadow-sm font-semibold ${
                               isLight
-                                ? 'bg-slate-100 border-slate-300 text-slate-900'
+                                ? 'bg-slate-100 ot-border text-slate-900'
                                 : 'bg-black/50 border-white/30 text-slate-200'
                             }`}
                           >
@@ -1871,7 +1871,7 @@ export const OttoLiquidView: React.FC<OttoLiquidViewProps> = ({
                 <img
                   src={attachedImage.dataUrl}
                   alt="Anexo"
-                  className="w-10 h-10 rounded-xl object-cover border border-slate-300 dark:border-white/20"
+                  className="w-10 h-10 rounded-xl object-cover border ot-border dark:border-white/20"
                 />
                 <div className="flex flex-col min-w-0">
                   <span className={`text-xs font-mono font-bold truncate max-w-[190px] ${isLight ? 'text-slate-950' : 'text-white'}`}>
@@ -1898,7 +1898,7 @@ export const OttoLiquidView: React.FC<OttoLiquidViewProps> = ({
               onSubmit={onCustomChatSubmit}
               className={`relative w-full rounded-full p-2 sm:p-2.5 flex items-center gap-2 transition-all ${
                 isLight
-                  ? 'glass-medium-white border border-slate-300/90 shadow-[0_12px_40px_rgba(0,0,0,0.08)] focus-within:border-slate-950'
+                  ? 'glass-medium-white ot-border border ot-focus'
                   : 'glass-medium liquid-refraction shadow-[0_12px_40px_rgba(0,0,0,0.6)] focus-within:border-white/60'
               }`}
             >
@@ -2012,7 +2012,7 @@ export const OttoLiquidView: React.FC<OttoLiquidViewProps> = ({
         <div
           className={`w-full h-full rounded-full p-1.5 backdrop-blur-3xl relative flex items-center justify-center transition-all duration-500 group ${
             isLight
-              ? 'bg-white/95 border border-slate-300/90 shadow-[0_16px_40px_rgba(0,0,0,0.15)] ring-1 ring-slate-200'
+              ? 'bg-white/95 ot-border border shadow-[0_16px_40px_rgba(0,0,0,0.15)] ring-1 ring-slate-200'
               : 'bg-[#0f1218]/90 border border-white/40 shadow-[0_16px_40px_rgba(0,0,0,0.85),0_0_25px_rgba(255,255,255,0.2)] ring-1 ring-white/15'
           } ${
             isDraggingOrb ? isLight ? 'ring-2 ring-slate-950 shadow-2xl' : 'ring-2 ring-white shadow-[0_20px_50px_rgba(0,0,0,0.95),0_0_35px_rgba(255,255,255,0.4)]' : ''
