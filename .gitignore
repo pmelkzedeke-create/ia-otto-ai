@@ -14,3 +14,5 @@ otto_workspace/.otto_projects.json
 otto_workspace/.otto_scratchpad.json
 otto_workspace/README.txt
 otto_workspace/Projetos/
+# mídia enviada pelo usuário e resultados do ffmpeg (ficam só na máquina)
+otto_workspace/media/

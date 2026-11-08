@@ -566,6 +566,15 @@ export default function App() {
 
             const res = await ToolRouter.executeAction(act);
             addActivity(res.message, res.success ? 'success' : 'error');
+
+            // Resultado do ffmpeg entra no Data Hub e já abre no visualizador
+            if (act.action === 'media_ffmpeg' && res.success && res.data?.createdFileId) {
+              const generated = DataHubStorage.getFileById(res.data.createdFileId);
+              if (generated) {
+                setSelectedPreviewFile(generated);
+                setShowPreviewModal(true);
+              }
+            }
           }
         }
 

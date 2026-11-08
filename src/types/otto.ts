@@ -34,6 +34,7 @@ export interface OttoAction {
     | 'preview_file'
     | 'open_settings'
     | 'open_terminal'
+    | 'media_ffmpeg'
     | 'none';
   target?: string;
   parameters?: Record<string, any>;

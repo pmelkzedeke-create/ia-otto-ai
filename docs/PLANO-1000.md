@@ -1389,3 +1389,32 @@ substituídas pela implementação única de `server/memoryStore.ts` (−8,6 mil
 `/api/memory` devolvendo `stats` e upsert funcionando (7 → 8 itens, sem duplicar na segunda escrita).
 
 **Próximo lote sugerido:** OTTO-0005 (microfone negado), OTTO-0026/0027 (plano preso em "rodando"), OTTO-0033 (silêncio não encerra a escuta), OTTO-0031/0032 (links e cópia), OTTO-0601/0604 (a11y do chat), OTTO-0651 (manifest PWA).
+
+---
+
+## Anexo F · Ferramenta de mídia (ffmpeg) — entregue
+
+O ffmpeg entrou na lista de **ferramentas que o modelo escolhe usar**, não como tela isolada de
+conversor. O usuário pede no chat; o OTTO decide chamar a ferramenta, escolhe a operação e
+devolve o arquivo pronto — que já abre no visualizador.
+
+| Entrega | Onde |
+| --- | --- |
+| Motor com 9 operações em allowlist (extrair áudio, converter, comprimir, capa, corte, GIF, folha de contato, normalizar, analisar) | `server/mediaTools.ts` |
+| Execução por `spawn(bin, args[])`, sem shell; entrada/saída presas a `otto_workspace/media` | idem |
+| Limites: 120 MB entrada · 400 MB saída · timeout 120 s (máx 300) · nada é sobrescrito sem autorização | idem |
+| Rotas `/api/media/status`, `/list`, `/upload`, `/ffmpeg`, `/file/*` | `server/routes/media.ts` |
+| Ferramenta `ffmpeg_media` no function calling do agente | `server/groqService.ts` + `server/toolExecutor.ts` |
+| Ação `media_ffmpeg` no chat, com espelho automático do anexo e importação do resultado para o Data Hub | `src/services/toolRouter.ts` + `src/services/dataHubStorage.ts` |
+| Badge de estado no compositor ("ffmpeg pronto" / "ffmpeg ausente", com dica por sistema) | `src/components/OttoLiquidBetaView.tsx` |
+| Instalação opcional (`ffmpeg-static`) sem quebrar o `npm install` | `package.json` |
+| Documentação de operações, segurança e API | `docs/MIDIA.md` |
+
+**Validação:** 18 testes novos (`tests/mediaTools.test.ts`, 90 no total) cobrindo allowlist,
+injeção de argumentos, clamps, sanitização de nome, travessia de caminho e `ENGINE_MISSING`;
+`tsc` limpo; build OK; e as **9 operações executadas de verdade** contra um ffmpeg estático
+(vídeo de 5 s gerado por `testsrc`/`sine`), incluindo `probe` devolvendo duração e codecs.
+
+**Correções encontradas no teste real:** `probe` não gera arquivo (validação de saída pulada),
+`extract_frames` virou folha de contato `tile` (sequência `%03d` não é um único arquivo) e
+operações encadeadas passaram a aceitar entrada em `media/out` (extrair áudio → normalizar).

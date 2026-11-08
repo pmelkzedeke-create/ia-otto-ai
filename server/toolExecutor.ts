@@ -8,6 +8,7 @@ import { CodeSandbox } from './codeSandbox.js';
 import { isCommandAllowed } from './security.js';
 import { isInside } from './paths.js';
 import { evaluateExpression } from './mathEval.js';
+import { MediaError, runMediaOperation, type MediaOperation } from './mediaTools.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -286,6 +287,51 @@ export async function executeGroqTool(name: string, rawArgs: string | Record<str
             createdPath: fullPath,
           },
         };
+      }
+
+      case 'ffmpeg_media': {
+        const operation = String(args.operation || '').trim() as MediaOperation;
+        const input = String(args.input || args.file || '').trim();
+
+        if (!operation || !input) {
+          return {
+            toolName: 'ffmpeg_media',
+            success: false,
+            result: null,
+            error: 'Informe a operação e o arquivo de entrada.',
+          };
+        }
+
+        try {
+          const media = await runMediaOperation({
+            operation,
+            input,
+            output: args.output ? String(args.output) : undefined,
+            options: args.options && typeof args.options === 'object' ? args.options : {},
+          });
+
+          return {
+            toolName: 'ffmpeg_media',
+            success: true,
+            result: {
+              operation: media.operation,
+              output: media.outputName,
+              downloadUrl: media.outputName
+                ? `/api/media/file/out/${encodeURIComponent(media.outputName)}`
+                : null,
+              sizeBytes: media.sizeBytes,
+              durationMs: media.durationMs,
+              engine: media.engine,
+              details: media.details,
+            },
+          };
+        } catch (mediaError) {
+          const message =
+            mediaError instanceof MediaError
+              ? mediaError.message
+              : `Falha no ffmpeg: ${(mediaError as Error)?.message || String(mediaError)}`;
+          return { toolName: 'ffmpeg_media', success: false, result: null, error: message };
+        }
       }
 
       case 'execute_command': {

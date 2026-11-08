@@ -15,6 +15,7 @@ import {
   DiffLine,
 } from '../types/dataHub';
 import { DataHubBlobManager } from './dataHubBlobStore';
+import { ApiBridge } from './apiBridge';
 
 const STORAGE_KEY_FILES = 'otto_datahub_files_v1';
 const STORAGE_KEY_FOLDERS = 'otto_datahub_folders_v1';
@@ -535,7 +536,11 @@ class DataHubStorageManager {
 
   // --- UPLOAD & INDEXING ---
 
-  public async uploadFiles(fileList: File[], parentFolderId?: string): Promise<OttoFile[]> {
+  public async uploadFiles(
+    fileList: File[],
+    parentFolderId?: string,
+    options?: { syncToServer?: boolean }
+  ): Promise<OttoFile[]> {
     const parent = parentFolderId ? this.getFolderById(parentFolderId) : undefined;
     const basePath = parent ? parent.path : '';
     const newFiles: OttoFile[] = [];
@@ -675,6 +680,24 @@ class DataHubStorageManager {
           keywords: content ? content.toLowerCase().split(/\W+/).filter((w) => w.length > 4).slice(0, 8) : [category, ext],
         },
       };
+
+      // Espelha áudio/vídeo pequeno no servidor para o agente poder usar o ffmpeg.
+      const shouldSync = options?.syncToServer !== false;
+      if (shouldSync && (category === 'video' || category === 'audio') && raw.size <= MEDIA_SYNC_LIMIT) {
+        try {
+          const synced = await ApiBridge.uploadMedia(raw.name, await fileToDataUrl(raw));
+          if (synced) {
+            ottoFile.metadata = {
+              ...ottoFile.metadata,
+              serverName: synced.name,
+              serverPath: synced.relativePath,
+              serverSyncedAt: new Date().toISOString(),
+            };
+          }
+        } catch (error) {
+          console.warn('[DataHub] Não consegui espelhar a mídia para o servidor:', error);
+        }
+      }
 
       newFiles.push(ottoFile);
     }
@@ -1165,3 +1188,15 @@ class DataHubStorageManager {
 }
 
 export const DataHubStorage = new DataHubStorageManager();
+
+/** Teto para espelhar mídia no servidor (o motor aceita até 120 MB). */
+const MEDIA_SYNC_LIMIT = 100 * 1024 * 1024;
+
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ''));
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}

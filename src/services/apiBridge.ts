@@ -466,6 +466,111 @@ export class ApiBridge {
     }
   }
 
+  // ---------------------------------------------------------------------
+  // Motor de mídia (ffmpeg)
+  // ---------------------------------------------------------------------
+
+  /** Estado do ffmpeg no servidor: disponível, versão e dica de instalação. */
+  public static async getMediaStatus(refresh = false): Promise<{
+    available: boolean;
+    version: string | null;
+    hint?: string;
+    operations: { id: string; label: string; description: string; accepts: string[]; produces: string }[];
+  } | null> {
+    try {
+      const res = await apiFetch(`/api/media/status${refresh ? '?refresh=1' : ''}`);
+      if (!res.ok) return null;
+      const data = await res.json();
+      return {
+        available: Boolean(data?.engine?.available),
+        version: data?.engine?.version ?? null,
+        hint: data?.engine?.hint,
+        operations: data?.operations || [],
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  /** Envia um arquivo de mídia para o servidor (o ffmpeg só lê media/in). */
+  public static async uploadMedia(
+    name: string,
+    dataUrl: string
+  ): Promise<{ name: string; relativePath: string; sizeBytes: number } | null> {
+    try {
+      const res = await apiFetch('/api/media/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, data: dataUrl }),
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      return data?.file ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  /** Executa uma operação do ffmpeg no servidor. */
+  public static async runMediaOperation(params: {
+    operation: string;
+    input: string;
+    output?: string;
+    options?: Record<string, unknown>;
+    overwrite?: boolean;
+  }): Promise<{
+    ok: boolean;
+    outputName?: string;
+    downloadUrl?: string | null;
+    sizeBytes?: number;
+    durationMs?: number;
+    details?: string;
+    error?: string;
+    code?: string;
+  }> {
+    try {
+      const res = await apiFetch('/api/media/ffmpeg', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params),
+        signal: undefined,
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        return { ok: false, error: data?.error || 'Não consegui processar a mídia.', code: data?.code };
+      }
+      return {
+        ok: true,
+        outputName: data.outputName,
+        downloadUrl: data.downloadUrl,
+        sizeBytes: data.sizeBytes,
+        durationMs: data.durationMs,
+        details: data.details,
+      };
+    } catch (error) {
+      return {
+        ok: false,
+        error:
+          (error as Error)?.name === 'ApiTimeoutError'
+            ? 'A conversão demorou demais e foi cancelada.'
+            : 'Falha de rede ao falar com o motor de mídia.',
+      };
+    }
+  }
+
+  /** Lista os arquivos de mídia que o agente enxerga. */
+  public static async listMediaFiles(): Promise<{ name: string; relativePath: string; sizeBytes: number }[]> {
+    try {
+      const res = await apiFetch('/api/media/list');
+      if (!res.ok) return [];
+      const data = await res.json();
+      return Array.isArray(data?.files) ? data.files : [];
+    } catch {
+      return [];
+    }
+  }
+
   public static async getProjects(): Promise<any[]> {
     try {
       const res = await apiFetch('/api/projects');

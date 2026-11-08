@@ -36,6 +36,10 @@ export interface FileMetadata {
   sha256?: string;
   mimeType?: string;
   topic?: string;
+  /** Nome do arquivo espelhado em otto_workspace/media/in (usado pelo ffmpeg). */
+  serverName?: string;
+  serverPath?: string;
+  serverSyncedAt?: string;
 }
 
 export interface OttoFile {

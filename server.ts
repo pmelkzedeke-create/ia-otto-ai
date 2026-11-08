@@ -27,6 +27,8 @@ import { sandboxRouter } from './server/routes/sandbox.js';
 import { agentRouter } from './server/routes/agent.js';
 import { filesRouter } from './server/routes/files.js';
 import { slidesRouter } from './server/routes/slides.js';
+import { mediaRouter } from './server/routes/media.js';
+import { listMediaFiles } from './server/mediaTools.js';
 import {
   loadMemories,
   saveMemories,
@@ -62,7 +64,12 @@ const BUILD_ID = Date.now().toString(36);
 // O token precisa existir antes do Vite carregar o config (injeção da meta tag).
 app.use(securityHeaders);
 app.use(apiRateLimit);
-app.use(express.json({ limit: '20mb' }));
+// O upload de mídia tem corpo grande (base64 de vídeo): parser próprio na rota,
+// para não estourar o limite global de 20 MB do resto da API.
+app.use((req, res, next) => {
+  if (req.path === '/api/media/upload') return next();
+  return express.json({ limit: '20mb' })(req, res, next);
+});
 
 // Middleware de Autenticação Central: exige header x-otto-token em todas as rotas de API
 app.use(authMiddleware);
@@ -74,6 +81,7 @@ app.use(sandboxRouter);
 app.use(agentRouter);
 app.use(filesRouter);
 app.use(slidesRouter);
+app.use(mediaRouter);
 
 if (!fs.existsSync(path.join(WORKSPACE_DIR, 'README.txt'))) {
   // Add a sample starter file and folder
@@ -1341,6 +1349,11 @@ DIRETRIZES FUNDAMENTAIS:
       }).join('\n')
     : 'Nenhum arquivo indexado no Data Hub no momento.';
 
+  const mediaFileList = listMediaFiles()
+    .slice(0, 15)
+    .map((file) => file.name)
+    .join(', ');
+
   const systemPromptWithMemory = `Você é o OTTO, um assistente de inteligência artificial de alta performance com autonomia total para analisar, raciocinar e controlar os recursos da aplicação.
 "Seu computador. Sua voz. Seu assistente."
 
@@ -1350,12 +1363,16 @@ ${dataHubFileList}
 MEMÓRIAS DE LONGO PRAZO E PREFERÊNCIAS ATIVAS:
 ${memoryContext || 'Nenhuma preferência personalizada registrada.'}
 
+MÍDIA PRONTA PARA O FFMPEG (otto_workspace/media/in):
+${mediaFileList || 'Nenhum áudio ou vídeo enviado ainda.'}
+
 AÇÕES E RECURSOS DO SITE QUE VOCÊ PODE DECIDIR ACIONAR AUTONOMAMENTE:
 - preview_file: Abre na tela a pré-visualização completa (player de vídeo com controles, player de áudio, leitor de PDF, visualizador de imagem ou planilha/código) para um arquivo do Data Hub. Use SEMPRE que o usuário pedir para ver, resumir, analisar, tocar ou abrir um arquivo. (parameters: { fileId: "<id>", filename: "<nome>" }, target: "<id_ou_nome>")
 - open_datahub: Abre o gerenciador de arquivos e pastas do Data Hub. (parameters: {}, target: "datahub")
 - embedded_youtube: Abre o player de vídeo integrado do YouTube com o melhor conteúdo. Use para músicas, tutoriais, receitas e vídeos. (parameters: { query: "<termo de busca>" }, target: "<termo>")
 - open_memory_map: Abre o mapa mental planetário de memórias do OTTO. (parameters: {}, target: "memory_map")
 - open_terminal: Abre o terminal de comandos e diagnóstico de sistema. (parameters: {}, target: "terminal")
+- media_ffmpeg: Processa áudio, vídeo ou imagem com o ffmpeg (extrair áudio, converter, comprimir, thumbnail, cortar, GIF, quadros, normalizar volume, analisar). Use quando o usuário pedir para transformar uma mídia. (parameters: { operation: "extract_audio" | "convert" | "compress" | "thumbnail" | "trim" | "to_gif" | "extract_frames" | "normalize_audio" | "probe", file: "<nome ou id do arquivo>", output: "<nome.ext>", options: { start?, end?, crf?, height?, fps? } }, target: "<nome do arquivo>")
 - open_settings: Abre as configurações de voz, temas e permissões. (parameters: {}, target: "settings")
 - organize_datahub: Gera e exibe o plano de organização inteligente de pastas e triagem de arquivos. (parameters: {}, target: "organize")
 - detect_duplicates: Analisa e exibe arquivos duplicados no Data Hub. (parameters: {}, target: "duplicates")
@@ -1374,7 +1391,7 @@ DIRETRIZES FUNDAMENTAIS DE RACIOCÍNIO E DECISÃO:
   "speechResponse": "Sua resposta analítica, detalhada e inteligente ao usuário.",
   "actions": [
     {
-      "action": "preview_file" | "open_datahub" | "embedded_youtube" | "open_memory_map" | "open_terminal" | "open_settings" | "organize_datahub" | "detect_duplicates" | "system_volume" | "none",
+      "action": "preview_file" | "open_datahub" | "embedded_youtube" | "open_memory_map" | "open_terminal" | "open_settings" | "organize_datahub" | "detect_duplicates" | "system_volume" | "media_ffmpeg" | "none",
       "target": "id_ou_termo_alvo",
       "parameters": { ... },
       "riskLevel": "LOW" | "MEDIUM" | "HIGH",

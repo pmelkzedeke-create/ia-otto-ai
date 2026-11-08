@@ -154,6 +154,48 @@ export const AVAILABLE_GROQ_TOOLS: GroqToolDefinition[] = [
   {
     type: 'function',
     function: {
+      name: 'ffmpeg_media',
+      description:
+        'Processa áudio, vídeo e imagens com o ffmpeg: extrair áudio, converter formato, comprimir, gerar thumbnail, cortar trecho, criar GIF, extrair quadros, normalizar volume ou analisar metadados. Use quando o usuário pedir para transformar uma mídia que já está no OTTO (media/in).',
+      parameters: {
+        type: 'object',
+        properties: {
+          operation: {
+            type: 'string',
+            enum: [
+              'extract_audio',
+              'convert',
+              'compress',
+              'thumbnail',
+              'trim',
+              'to_gif',
+              'extract_frames',
+              'normalize_audio',
+              'probe',
+            ],
+            description: 'Operação desejada.',
+          },
+          input: {
+            type: 'string',
+            description: 'Nome ou caminho do arquivo de entrada dentro de otto_workspace/media (ex: "video.mp4" ou "in/video.mp4").',
+          },
+          output: {
+            type: 'string',
+            description: 'Nome do arquivo de saída, com extensão (ex: "audio.mp3"). Opcional.',
+          },
+          options: {
+            type: 'object',
+            description:
+              'Ajustes opcionais: start/end/duration (tempo), crf, height, fps, width, quality, preset.',
+          },
+        },
+        required: ['operation', 'input'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
       name: 'execute_command',
       description: 'Executa um comando no terminal do computador de forma segura.',
       parameters: {

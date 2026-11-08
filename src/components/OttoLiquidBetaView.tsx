@@ -33,6 +33,8 @@ import {
   Image as ImageIcon,
 } from 'lucide-react';
 import { OttoState, ActivityItem, ChatMessage, SystemTelemetry, OttoSettings, AgentTaskPlan } from '../types/otto';
+import { ApiBridge } from '../services/apiBridge';
+
 import { OttoLiquidMascot } from './OttoLiquidMascot';
 import { ArtifactViewer } from './ArtifactViewer';
 import { KnowledgeCardViewer } from './KnowledgeCardViewer';
@@ -298,6 +300,25 @@ export const OttoLiquidView: React.FC<OttoLiquidViewProps> = ({
   const [showThemePicker, setShowThemePicker] = useState<boolean>(false);
 
   // Attachment state for chat input (image & file uploads for vision and processing)
+  const [mediaEngine, setMediaEngine] = useState<{
+    available: boolean;
+    version: string | null;
+    hint?: string;
+  } | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    ApiBridge.getMediaStatus()
+      .then((status) => {
+        if (!alive || !status) return;
+        setMediaEngine({ available: status.available, version: status.version, hint: status.hint });
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, []);
+
   const [attachedImage, setAttachedImage] = useState<{
     dataUrl: string;
     name: string;
@@ -1834,6 +1855,38 @@ export const OttoLiquidView: React.FC<OttoLiquidViewProps> = ({
 
           {/* Bottom ChatGPT Floating Prompt Bar */}
           <div className="w-full pt-2 pb-1 relative">
+            {/* ffmpeg: o OTTO processa áudio e vídeo quando o motor está presente */}
+            {mediaEngine && (
+              <div className="flex justify-end pr-3 pb-1.5">
+                <button
+                  type="button"
+                  onClick={async () => setMediaEngine(await ApiBridge.getMediaStatus(true))}
+                  title={
+                    mediaEngine.available
+                      ? `Motor de mídia pronto${mediaEngine.version ? ` · ${mediaEngine.version}` : ''}. Peça no chat: "extrai o áudio desse vídeo" ou "gera um gif".`
+                      : mediaEngine.hint || 'ffmpeg não encontrado no servidor.'
+                  }
+                  className={`group flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[10px] font-semibold tracking-wide transition-all duration-300 cursor-pointer active:scale-95 ${
+                    mediaEngine.available
+                      ? isLight
+                        ? 'bg-white/70 border-emerald-300/70 text-emerald-900 hover:bg-white'
+                        : 'bg-white/[0.06] border-emerald-400/30 text-emerald-200/90 hover:bg-white/[0.12]'
+                      : isLight
+                      ? 'bg-white/60 border-amber-300/70 text-amber-900 hover:bg-white'
+                      : 'bg-white/[0.05] border-amber-400/25 text-amber-200/80 hover:bg-white/[0.11]'
+                  }`}
+                >
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full ${
+                      mediaEngine.available
+                        ? 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.8)]'
+                        : 'bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.7)]'
+                    }`}
+                  />
+                  {mediaEngine.available ? 'ffmpeg pronto' : 'ffmpeg ausente'}
+                </button>
+              </div>
+            )}
             {/* Attached Image Preview Chip */}
             {attachedImage && (
               <div className={`absolute -top-14 left-4 flex items-center gap-2.5 p-1.5 pr-3 rounded-2xl backdrop-blur-xl border shadow-2xl animate-fade-in z-20 ${
