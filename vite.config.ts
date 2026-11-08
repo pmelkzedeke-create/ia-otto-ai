@@ -13,7 +13,7 @@ export default defineConfig(() => {
     },
     server: {
       // Permite acesso via hosts externos (proxies de preview / sandbox).
-      allowedHosts: true,
+      allowedHosts: true as const,
       host: '0.0.0.0',
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
       // Do not modify—file watching is disabled to prevent flickering during agent edits.
