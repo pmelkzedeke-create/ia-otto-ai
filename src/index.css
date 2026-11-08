@@ -778,14 +778,16 @@
   from { opacity: 1; }
   to   { opacity: 0; }
 }
+/* Curva "sheet" do iOS: começa macia e assenta devagar (cubic-bezier(.32,.72,0,1)).
+   Só transform + opacity: animar filter: blur() num painel grande re-rasteriza
+   a tela toda a cada frame e é o que fazia a abertura parecer brusca. */
 @keyframes dh-panel-in {
-  0%   { opacity: 0; transform: perspective(1600px) translateY(26px) scale(.93) rotateX(4deg); filter: blur(16px); }
-  55%  { opacity: 1; filter: blur(0); }
-  100% { opacity: 1; transform: perspective(1600px) translateY(0) scale(1) rotateX(0deg); filter: blur(0); }
+  from { opacity: 0; transform: translate3d(0, 16px, 0) scale(.965); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
 }
 @keyframes dh-panel-out {
-  from { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
-  to   { opacity: 0; transform: translateY(16px) scale(.965); filter: blur(10px); }
+  from { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+  to   { opacity: 0; transform: translate3d(0, 10px, 0) scale(.98); }
 }
 @keyframes dh-rise {
   from { opacity: 0; transform: translateY(16px); }
@@ -832,10 +834,10 @@
 }
 
 /* Backdrop + painel */
-.dh-backdrop        { animation: dh-backdrop-in 260ms cubic-bezier(.16,1,.3,1) both; }
-.dh-backdrop--exit  { animation: dh-backdrop-out 220ms ease-in both; }
-.dh-panel           { animation: dh-panel-in 520ms cubic-bezier(.16,1,.3,1) backwards; will-change: transform, opacity, filter; }
-.dh-panel--exit     { animation: dh-panel-out 220ms cubic-bezier(.4,0,1,1) both; }
+.dh-backdrop        { animation: dh-backdrop-in 380ms cubic-bezier(.32,.72,0,1) backwards; }
+.dh-backdrop--exit  { animation: dh-backdrop-out 260ms cubic-bezier(.4,0,1,1) forwards; }
+.dh-panel           { animation: dh-panel-in 620ms cubic-bezier(.32,.72,0,1) backwards; will-change: transform, opacity; }
+.dh-panel--exit     { animation: dh-panel-out 280ms cubic-bezier(.4,0,1,1) forwards; }
 
 /* Aurora girando atrás do vidro */
 .dh-aurora {
@@ -845,15 +847,17 @@
   background: conic-gradient(from 0deg,
     rgba(56,189,248,.22), rgba(167,139,250,.18), rgba(52,211,153,.16),
     rgba(244,114,182,.12), rgba(56,189,248,.22));
-  filter: blur(60px);
+  filter: blur(46px);
   animation: dh-aurora-spin 24s linear infinite;
-  opacity: .75;
+  animation-delay: 420ms;
+  opacity: .55;
+  will-change: transform;
 }
 
 /* Entrada escalonada de blocos */
-.dh-rise  { animation: dh-rise 520ms cubic-bezier(.16,1,.3,1) both; }
-.dh-slide { animation: dh-slide-right 460ms cubic-bezier(.16,1,.3,1) both; }
-.dh-pop   { animation: dh-pop 320ms cubic-bezier(.16,1,.3,1) both; }
+.dh-rise  { animation: dh-rise 560ms cubic-bezier(.32,.72,0,1) both; }
+.dh-slide { animation: dh-slide-right 520ms cubic-bezier(.32,.72,0,1) both; }
+.dh-pop   { animation: dh-pop 360ms cubic-bezier(.32,.72,0,1) both; }
 
 /* Cards com elevação no hover */
 .dh-card {
@@ -912,7 +916,7 @@
   from { opacity: 0; transform: translateX(18px) scale(.994); filter: blur(6px); }
   to   { opacity: 1; transform: translateX(0) scale(1); filter: blur(0); }
 }
-.dh-page-in { animation: dh-page-in 380ms cubic-bezier(.16,1,.3,1) both; }
+.dh-page-in { animation: dh-page-in 420ms cubic-bezier(.32,.72,0,1) both; }
 
 @keyframes dh-toast-in {
   from { opacity: 0; transform: translateY(22px) scale(.94); }
@@ -983,13 +987,12 @@
   to   { opacity: 1; transform: translateX(0); }
 }
 @keyframes otto-shell-in {
-  from { opacity: 0; transform: scale(.988); filter: blur(10px); }
-  to   { opacity: 1; transform: scale(1); filter: blur(0); }
+  from { opacity: 0; transform: scale(.992); }
+  to   { opacity: 1; transform: scale(1); }
 }
 @keyframes otto-dialog-in {
-  0%   { opacity: 0; transform: translateY(20px) scale(.94); filter: blur(12px); }
-  60%  { opacity: 1; filter: blur(0); }
-  100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+  from { opacity: 0; transform: translate3d(0, 16px, 0) scale(.965); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
 }
 @keyframes otto-spin-slow {
   to { transform: rotate(360deg); }
@@ -1012,10 +1015,10 @@
 /* Casca do app */
 /* `backwards`: ao terminar, o elemento volta ao estilo natural — sem reter
    filter/transform no container inteiro (evita camada de composição eterna). */
-.otto-shell { animation: otto-shell-in 720ms cubic-bezier(.16,1,.3,1) backwards; }
+.otto-shell { animation: otto-shell-in 760ms cubic-bezier(.32,.72,0,1) backwards; }
 
 /* Diálogos / painéis de modal */
-.otto-dialog { animation: otto-dialog-in 520ms cubic-bezier(.16,1,.3,1) backwards; }
+.otto-dialog { animation: otto-dialog-in 620ms cubic-bezier(.32,.72,0,1) backwards; will-change: transform, opacity; }
 
 /* Entrada em cascata: aplica aos filhos diretos com atraso progressivo */
 .otto-stagger > * { animation: otto-fade-up 560ms cubic-bezier(.16,1,.3,1) both; }
@@ -1042,5 +1045,5 @@
 
 /* Painel dentro de overlay de vidro entra com o mesmo movimento dos diálogos */
 .liquid-glass-overlay > :first-child {
-  animation: otto-dialog-in 520ms cubic-bezier(.16,1,.3,1) backwards;
+  animation: otto-dialog-in 620ms cubic-bezier(.32,.72,0,1) backwards;
 }

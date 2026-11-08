@@ -189,7 +189,7 @@ export const DataHubModal: React.FC<DataHubModalProps> = ({
       setIsClosing(false);
       setSearchQuery('');
       setSelectedFileIds(new Set());
-    }, 220);
+    }, 280);
     return () => window.clearTimeout(timer);
   }, [isOpen, isRendered]);
 
@@ -364,7 +364,7 @@ export const DataHubModal: React.FC<DataHubModalProps> = ({
   return (
     <>
       <div
-        className={`fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-2xl font-sans ${
+        className={`fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-xl font-sans ${
           isClosing ? 'dh-backdrop--exit' : 'dh-backdrop'
         }`}
         onClick={onClose}
@@ -386,7 +386,7 @@ export const DataHubModal: React.FC<DataHubModalProps> = ({
             {/* Header Bar */}
             <div
               className="p-4 sm:p-5 border-b border-white/10 flex items-center justify-between bg-white/[0.04] dh-rise"
-              style={{ animationDelay: '60ms' }}
+              style={{ animationDelay: '140ms' }}
             >
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-2xl bg-white/10 border border-white/25 flex items-center justify-center text-white shadow-inner dh-pop">
@@ -432,7 +432,7 @@ export const DataHubModal: React.FC<DataHubModalProps> = ({
               {/* Left Sidebar: Folder Tree & Stats */}
               <div
                 className="hidden md:flex flex-col w-64 border-r border-white/10 bg-black/50 p-4 justify-between shrink-0 dh-slide"
-                style={{ animationDelay: '120ms' }}
+                style={{ animationDelay: '200ms' }}
               >
                 <div className="flex flex-col gap-3">
                   <div className="flex items-center justify-between text-xs font-semibold text-slate-400">
@@ -469,7 +469,7 @@ export const DataHubModal: React.FC<DataHubModalProps> = ({
                             ? 'bg-white text-slate-950 font-bold shadow-[0_4px_16px_rgba(255,255,255,0.25)]'
                             : 'text-slate-300 hover:bg-white/[0.08] hover:text-white'
                         }`}
-                        style={{ animationDelay: `${160 + index * 45}ms` }}
+                        style={{ animationDelay: `${220 + index * 45}ms` }}
                       >
                         <Folder className="w-4 h-4 shrink-0" />
                         <span className="truncate">{folder.name}</span>
@@ -554,7 +554,7 @@ export const DataHubModal: React.FC<DataHubModalProps> = ({
                 {/* Toolbar */}
                 <div
                   className="p-3 sm:p-4 border-b border-white/10 flex flex-wrap items-center justify-between gap-3 bg-white/[0.02] dh-rise"
-                  style={{ animationDelay: '180ms' }}
+                  style={{ animationDelay: '260ms' }}
                 >
                   {/* Breadcrumbs */}
                   <div className="flex items-center gap-1.5 text-xs text-slate-300">
@@ -739,7 +739,7 @@ export const DataHubModal: React.FC<DataHubModalProps> = ({
                           <div
                             key={folder.id}
                             className="dh-rise"
-                            style={{ animationDelay: `${200 + Math.min(index, 10) * 45}ms` }}
+                            style={{ animationDelay: `${280 + Math.min(index, 10) * 45}ms` }}
                           >
                             <div
                               onClick={() => setCurrentFolderId(folder.id)}
@@ -825,7 +825,7 @@ export const DataHubModal: React.FC<DataHubModalProps> = ({
                             <div
                               key={file.id}
                               className="dh-rise"
-                              style={{ animationDelay: `${Math.min(index, 12) * 40}ms` }}
+                              style={{ animationDelay: `${120 + Math.min(index, 12) * 40}ms` }}
                             >
                               <div
                                 onClick={() => setPreviewFile(file)}

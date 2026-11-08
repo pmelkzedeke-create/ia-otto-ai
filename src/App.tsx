@@ -191,6 +191,31 @@ export default function App() {
     return () => clearInterval(timer);
   }, []);
 
+  // Pré-carrega os modais sob demanda para que o primeiro clique já abra
+  // animado, sem o "pulo" de esperar o chunk baixar (causa do aspecto brusco).
+  useEffect(() => {
+    const warmUp = () => {
+      void import('./components/datahub/DataHubModal');
+      void import('./components/datahub/DataHubPreviewModal');
+      void import('./components/SettingsModal');
+      void import('./components/PlanetaryMemoryModal');
+      void import('./components/AgentModeModal');
+      void import('./components/YouTubeWidget');
+      void import('./components/ConfirmationDialog');
+    };
+
+    const ric = (window as unknown as { requestIdleCallback?: (cb: () => void) => number })
+      .requestIdleCallback;
+    if (typeof ric === 'function') {
+      const id = ric(warmUp);
+      const cancel = (window as unknown as { cancelIdleCallback?: (id: number) => void })
+        .cancelIdleCallback;
+      return () => cancel?.(id);
+    }
+    const timer = window.setTimeout(warmUp, 900);
+    return () => window.clearTimeout(timer);
+  }, []);
+
   // System telemetry fetcher
   useEffect(() => {
     const fetchInfo = async () => {
@@ -788,8 +813,19 @@ export default function App() {
     });
   };
 
+  // Efeito "sheet" do iOS: com um modal aberto, o conteúdo de trás recua levemente.
+  const isAnyModalOpen =
+    showMemoryModal || showSettingsModal || showAgentModal || showDataHubModal || showPreviewModal;
+
   return (
     <div className={`otto-shell h-[100dvh] w-screen relative overflow-hidden select-none font-sans transition-colors duration-300 ${isLightMode ? 'bg-[#edf1f7] text-slate-900 theme-light' : 'bg-[#090a0d] text-slate-100'}`}>
+      <div
+        className="h-full w-full origin-center transition-transform duration-500 ease-out"
+        style={{
+          transform: isAnyModalOpen ? 'scale(0.985)' : 'scale(1)',
+          transitionTimingFunction: 'cubic-bezier(.32,.72,0,1)',
+        }}
+      >
       <OttoLiquidView
         state={state}
         isListening={isListening}
@@ -812,10 +848,11 @@ export default function App() {
         activePlan={currentPlan}
         interimTranscript={interimTranscript}
       />
+      </div>
 
       {/* OTTO DATA HUB MODAL */}
-            <Suspense fallback={null}>
-  <DataHubModal
+      <Suspense fallback={null}>
+        <DataHubModal
           isOpen={showDataHubModal}
           onClose={() => setShowDataHubModal(false)}
           onAskOttoAboutFiles={(prompt) => handleProcessCommand(prompt)}
@@ -823,8 +860,8 @@ export default function App() {
       </Suspense>
 
       {/* OTTO FILE PREVIEW MODAL (Videos, Audios, PDFs, Spreadsheets, Images, Code) */}
-            <Suspense fallback={null}>
-  <DataHubPreviewModal
+      <Suspense fallback={null}>
+        <DataHubPreviewModal
           file={selectedPreviewFile}
           isOpen={showPreviewModal}
           onClose={() => {
@@ -836,8 +873,8 @@ export default function App() {
       </Suspense>
 
       {/* INTEGRATED YOUTUBE WORKSPACE PLAYER */}
-            <Suspense fallback={null}>
-  <YouTubeWidget
+      <Suspense fallback={null}>
+        <YouTubeWidget
           isOpen={youtubeState.isOpen}
           onClose={() => setYoutubeState((prev) => ({ ...prev, isOpen: false }))}
           query={youtubeState.query}
@@ -850,8 +887,8 @@ export default function App() {
       </Suspense>
 
       {/* MODALS */}
-            <Suspense fallback={null}>
-  <PlanetaryMemoryModal
+      <Suspense fallback={null}>
+        <PlanetaryMemoryModal
           isOpen={showMemoryModal}
           onClose={() => setShowMemoryModal(false)}
           onMemoryChanged={() => addActivity('Memória central do OTTO sincronizada.', 'info')}
@@ -860,8 +897,8 @@ export default function App() {
         />
       </Suspense>
 
-            <Suspense fallback={null}>
-  <SettingsModal
+      <Suspense fallback={null}>
+        <SettingsModal
           isOpen={showSettingsModal}
           onClose={() => setShowSettingsModal(false)}
           settings={settings}
@@ -869,8 +906,8 @@ export default function App() {
         />
       </Suspense>
 
-            <Suspense fallback={null}>
-  <AgentModeModal
+      <Suspense fallback={null}>
+        <AgentModeModal
           isOpen={showAgentModal}
           onClose={() => setShowAgentModal(false)}
           plan={currentPlan}
@@ -882,8 +919,8 @@ export default function App() {
         />
       </Suspense>
 
-            <Suspense fallback={null}>
-  <ConfirmationDialog
+      <Suspense fallback={null}>
+        <ConfirmationDialog
           isOpen={Boolean(pendingConfirmation)}
           prompt={pendingConfirmation?.prompt || ''}
           action={pendingConfirmation?.action || null}
