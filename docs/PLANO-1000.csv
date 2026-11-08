@@ -1,0 +1,1001 @@
+﻿ID;Area;Item;Prioridade;Esforco;Status
+OTTO-0001;01 · Bugs e estabilidade;Recarga do bridge de build interrompe o ditado e apaga o rascunho: adiar reload com gravação ativa;P0;M;aberto
+OTTO-0002;01 · Bugs e estabilidade;"Estado ""pensando"" fica preso quando o stream aborta no meio da resposta";P0;S;aberto
+OTTO-0003;01 · Bugs e estabilidade;Envio rápido (duplo clique ou Enter duplo) duplica a mensagem do usuário;P1;S;aberto
+OTTO-0004;01 · Bugs e estabilidade;Resposta do assistente desaparece ao alternar claro/escuro (remontagem da lista);P1;M;aberto
+OTTO-0005;01 · Bugs e estabilidade;Microfone negado não gera feedback visual nem instrução de desbloqueio;P0;S;aberto
+OTTO-0006;01 · Bugs e estabilidade;"Falha de rede no envio deixa mensagem órfã, sem botão ""reenviar""";P1;M;aberto
+OTTO-0007;01 · Bugs e estabilidade;Scroll do chat briga com o streaming: usuário rola para cima e é puxado de volta;P1;S;aberto
+OTTO-0008;01 · Bugs e estabilidade;Conversa não sobrevive a F5: nenhuma persistência local do histórico;P0;M;aberto
+OTTO-0009;01 · Bugs e estabilidade;ErrorBoundary recarrega a página e apaga o histórico em memória;P1;M;aberto
+OTTO-0010;01 · Bugs e estabilidade;Modal aberto com teclado mobile empurra o painel para fora da tela;P1;M;aberto
+OTTO-0011;01 · Bugs e estabilidade;AudioContext fica suspenso no iOS até um gesto: a primeira fala sai muda;P1;M;aberto
+OTTO-0012;01 · Bugs e estabilidade;"Botão ""parar"" não cancela a síntese em andamento: o áudio continua";P0;S;aberto
+OTTO-0013;01 · Bugs e estabilidade;Duas instâncias de TTS tocam juntas após hot reload;P1;M;aberto
+OTTO-0014;01 · Bugs e estabilidade;Fila de fala acumula mensagens antigas quando a resposta é longa;P1;M;aberto
+OTTO-0015;01 · Bugs e estabilidade;Trocar de voz no meio da fala deixa o áudio anterior tocando;P2;S;aberto
+OTTO-0016;01 · Bugs e estabilidade;AudioContext não é fechado no unmount: vaza a cada navegação;P2;S;aberto
+OTTO-0017;01 · Bugs e estabilidade;Timers das partículas do holograma continuam rodando com a aba em background;P2;M;aberto
+OTTO-0018;01 · Bugs e estabilidade;Listener de resize acumulado a cada montagem do holograma;P2;S;aberto
+OTTO-0019;01 · Bugs e estabilidade;`setInterval` do relógio do header nunca é limpo;P2;S;aberto
+OTTO-0020;01 · Bugs e estabilidade;"Erro de cota (429) aparece como ""algo deu errado"" genérico";P0;S;aberto
+OTTO-0021;01 · Bugs e estabilidade;Falta de timeout no fetch de streaming deixa spinner infinito;P0;S;aberto
+OTTO-0022;01 · Bugs e estabilidade;Sem retry automático em 502/503 do provedor de IA;P1;M;aberto
+OTTO-0023;01 · Bugs e estabilidade;Trocar de modelo em Configurações só vale depois de recarregar a página;P1;M;aberto
+OTTO-0024;01 · Bugs e estabilidade;Preview do Data Hub abre vazio quando o blob expira;P1;M;aberto
+OTTO-0025;01 · Bugs e estabilidade;Excluir item da memória não atualiza a lista até reabrir o modal;P2;S;aberto
+OTTO-0026;01 · Bugs e estabilidade;"Plano continua ""rodando"" depois de uma etapa falhar";P0;M;aberto
+OTTO-0027;01 · Bugs e estabilidade;Etapa do agente falha em silêncio: sem motivo e sem opção de repetir;P0;M;aberto
+OTTO-0028;01 · Bugs e estabilidade;Upload de imagem grande (acima de 8 MB) trava a UI sem barra de progresso;P1;M;aberto
+OTTO-0029;01 · Bugs e estabilidade;Texto colado com markdown malformado quebra o renderizador;P1;S;aberto
+OTTO-0030;01 · Bugs e estabilidade;Links nas mensagens abrem na mesma aba e perdem a conversa;P1;S;aberto
+OTTO-0031;01 · Bugs e estabilidade;"Copiar resposta inclui os rótulos ""Você"" e ""Otto"" no clipboard";P2;S;aberto
+OTTO-0032;01 · Bugs e estabilidade;"Botão de copiar não devolve feedback de ""copiado""";P2;S;aberto
+OTTO-0033;01 · Bugs e estabilidade;Transcrição parcial aparece e some, causando tremor no layout;P1;M;aberto
+OTTO-0034;01 · Bugs e estabilidade;Silêncio total do usuário não encerra a escuta: grava indefinidamente;P0;M;aberto
+OTTO-0035;01 · Bugs e estabilidade;Trocar de aba no Chrome mobile encerra a síntese no meio;P2;M;aberto
+OTTO-0036;01 · Bugs e estabilidade;Data e hora do header não acompanham mudança de fuso sem reload;P3;S;aberto
+OTTO-0037;01 · Bugs e estabilidade;Pinch acidental no iOS quebra o layout do chat;P1;S;aberto
+OTTO-0038;01 · Bugs e estabilidade;Área segura (notch) corta o header no iPhone;P1;S;aberto
+OTTO-0039;01 · Bugs e estabilidade;Tema claro: placeholder do campo de texto fica ilegível;P1;S;aberto
+OTTO-0040;01 · Bugs e estabilidade;Tema claro: sombra escura do painel do Data Hub vaza para o fundo;P1;S;aberto
+OTTO-0041;01 · Bugs e estabilidade;`prefers-reduced-motion` não desliga a animação do mascote;P1;S;aberto
+OTTO-0042;01 · Bugs e estabilidade;Foco de teclado invisível nos botões do header (outline removido);P1;S;aberto
+OTTO-0043;01 · Bugs e estabilidade;Tab não alcança o campo de texto depois de fechar um modal;P2;M;aberto
+OTTO-0044;01 · Bugs e estabilidade;Esc fecha o modal errado quando dois estão empilhados;P2;M;aberto
+OTTO-0045;01 · Bugs e estabilidade;Texto longo sem quebra estoura a bolha horizontalmente;P2;S;aberto
+OTTO-0046;01 · Bugs e estabilidade;Emoji e acentos quebram o efeito de digitação (caractere solto);P2;M;aberto
+OTTO-0047;01 · Bugs e estabilidade;Mensagens antigas perdem formatação ao restaurar a sessão;P2;M;aberto
+OTTO-0048;01 · Bugs e estabilidade;Console poluído por warning de `key` duplicada na lista de mensagens;P2;S;aberto
+OTTO-0049;01 · Bugs e estabilidade;Erros de runtime não são reportados a lugar nenhum além do console;P1;M;aberto
+OTTO-0050;01 · Bugs e estabilidade;"Nenhuma tela de ""offline"" explícita: usuário acha que o app travou";P1;S;aberto
+OTTO-0051;02 · Voz: entrada (STT);"Wake word ""Otto"" processada no dispositivo, sem nuvem";P1;L;aberto
+OTTO-0052;02 · Voz: entrada (STT);VAD para cortar silêncio no início e no fim da fala antes do upload;P0;L;aberto
+OTTO-0053;02 · Voz: entrada (STT);Push-to-talk (segurar espaço) como alternativa ao modo contínuo;P1;M;aberto
+OTTO-0054;02 · Voz: entrada (STT);Atalho global Ctrl+Espaço para iniciar a fala em qualquer tela;P1;M;aberto
+OTTO-0055;02 · Voz: entrada (STT);Esc cancela a transcrição em andamento sem enviar;P1;S;aberto
+OTTO-0056;02 · Voz: entrada (STT);Seleção de dispositivo de entrada nas Configurações;P1;M;aberto
+OTTO-0057;02 · Voz: entrada (STT);Medidor de nível de entrada (VU) ao lado do botão de microfone;P2;S;aberto
+OTTO-0058;02 · Voz: entrada (STT);Aviso quando o microfone está mudo no sistema operacional;P1;M;aberto
+OTTO-0059;02 · Voz: entrada (STT);Reconexão automática do STT em queda de rede;P1;M;aberto
+OTTO-0060;02 · Voz: entrada (STT);Envio do áudio em blocos de 250 ms em vez de um blob único no fim;P1;L;aberto
+OTTO-0061;02 · Voz: entrada (STT);Transcrição parcial em streaming, em vez de esperar o fim;P1;L;aberto
+OTTO-0062;02 · Voz: entrada (STT);Pontuação automática nas transcrições;P2;M;aberto
+OTTO-0063;02 · Voz: entrada (STT);Dicionário pessoal para corrigir nomes próprios recorrentes;P2;M;aberto
+OTTO-0064;02 · Voz: entrada (STT);"Comando de voz para corrigir a última mensagem (""não, eu quis dizer…"")";P2;L;aberto
+OTTO-0065;02 · Voz: entrada (STT);"Conversão de números e datas falados (""doze de março"" para 12/03)";P2;M;aberto
+OTTO-0066;02 · Voz: entrada (STT);Detecção automática de idioma PT, EN e ES;P2;L;aberto
+OTTO-0067;02 · Voz: entrada (STT);Modo sussurro com ganho adaptativo para fala baixa;P3;M;aberto
+OTTO-0068;02 · Voz: entrada (STT);Redução de ruído antes do STT;P2;L;aberto
+OTTO-0069;02 · Voz: entrada (STT);Half-duplex: microfone atenuado enquanto o TTS fala, evitando eco;P0;M;aberto
+OTTO-0070;02 · Voz: entrada (STT);Barge-in: falar interrompe o OTTO imediatamente;P0;L;aberto
+OTTO-0071;02 · Voz: entrada (STT);Contagem regressiva opcional de 3–2–1 antes de gravar;P3;S;aberto
+OTTO-0072;02 · Voz: entrada (STT);Limite de duração por gravação, com aviso aos 55 segundos;P2;S;aberto
+OTTO-0073;02 · Voz: entrada (STT);Silêncio longo pede repetição em vez de devolver erro;P1;S;aberto
+OTTO-0074;02 · Voz: entrada (STT);Retomar a última gravação se o envio falhar;P1;M;aberto
+OTTO-0075;02 · Voz: entrada (STT);Teste de microfone nas Configurações (ouvir a si mesmo);P2;M;aberto
+OTTO-0076;02 · Voz: entrada (STT);Compressão opus 16 kHz para reduzir o upload pela metade;P2;M;aberto
+OTTO-0077;02 · Voz: entrada (STT);Transcrição local opcional (Whisper WASM) para privacidade;P3;L;aberto
+OTTO-0078;02 · Voz: entrada (STT);Áudio bruto guardado só 24 h, com expurgo automático e aviso;P2;M;aberto
+OTTO-0079;02 · Voz: entrada (STT);Consentimento explícito na primeira gravação, revogável;P1;S;aberto
+OTTO-0080;02 · Voz: entrada (STT);Estado do botão inequívoco: gravando, transcrevendo, enviado;P1;S;aberto
+OTTO-0081;02 · Voz: entrada (STT);Vibração curta ao iniciar e encerrar a captura no mobile;P3;S;aberto
+OTTO-0082;02 · Voz: entrada (STT);Bloqueio de gravação dupla em cliques com menos de 300 ms;P1;S;aberto
+OTTO-0083;02 · Voz: entrada (STT);Wake word pausada durante o TTS para não se auto-disparar;P1;M;aberto
+OTTO-0084;02 · Voz: entrada (STT);Métrica de duração da fala até a resposta no painel de diagnóstico;P2;M;aberto
+OTTO-0085;02 · Voz: entrada (STT);Fallback para digitação após duas falhas seguidas de STT;P1;M;aberto
+OTTO-0086;02 · Voz: entrada (STT);Encerrar o envio sem cortar a frase quando o usuário pausa no meio;P3;M;aberto
+OTTO-0087;02 · Voz: entrada (STT);Normalização de volume (loudness) antes de enviar;P2;M;aberto
+OTTO-0088;02 · Voz: entrada (STT);Detectar fala sobreposta de duas pessoas e avisar;P3;L;aberto
+OTTO-0089;02 · Voz: entrada (STT);Comandos curtos reconhecidos offline: parar, repetir, limpar;P2;M;aberto
+OTTO-0090;02 · Voz: entrada (STT);Idioma de entrada salvo por dispositivo;P2;S;aberto
+OTTO-0091;02 · Voz: entrada (STT);Iniciar gravação por teclado, com foco visível;P1;S;aberto
+OTTO-0092;02 · Voz: entrada (STT);Compatibilidade com Safari iOS 15+, onde MediaRecorder falta;P1;M;aberto
+OTTO-0093;02 · Voz: entrada (STT);Fallback de captura via AudioWorklet quando MediaRecorder falha;P2;L;aberto
+OTTO-0094;02 · Voz: entrada (STT);Explicar na UI por que o microfone é necessário antes de pedir;P1;S;aberto
+OTTO-0095;02 · Voz: entrada (STT);"Indicador discreto e persistente de ""OTTO está ouvindo""";P1;S;aberto
+OTTO-0096;02 · Voz: entrada (STT);Teste E2E simulando áudio com fixture WAV;P2;L;aberto
+OTTO-0097;02 · Voz: entrada (STT);Teste unitário do VAD com amostras sintéticas;P2;M;aberto
+OTTO-0098;02 · Voz: entrada (STT);ADR documentando o pipeline de voz;P2;S;aberto
+OTTO-0099;02 · Voz: entrada (STT);Telemetria de falhas de STT por navegador e versão;P2;M;aberto
+OTTO-0100;02 · Voz: entrada (STT);"Modo ""só escuta"" sem envio, para comandos de navegação";P3;L;aberto
+OTTO-0101;03 · Voz: saída (TTS);Tocar a primeira frase enquanto o resto ainda é sintetizado;P0;L;aberto
+OTTO-0102;03 · Voz: saída (TTS);Dividir a resposta por sentença para reduzir a latência percebida;P0;M;aberto
+OTTO-0103;03 · Voz: saída (TTS);Fallback em cadeia: Gemini para ElevenLabs para Web Speech;P0;M;aberto
+OTTO-0104;03 · Voz: saída (TTS);Fila com prioridade: barge-in limpa tudo que estava pendente;P0;M;aberto
+OTTO-0105;03 · Voz: saída (TTS);Pré-aquecer o motor de voz na abertura do app;P1;M;aberto
+OTTO-0106;03 · Voz: saída (TTS);Voz padrão por idioma, sem misturar PT e EN na mesma frase;P1;M;aberto
+OTTO-0107;03 · Voz: saída (TTS);Controle de velocidade de fala entre 0.8x e 1.5x;P1;S;aberto
+OTTO-0108;03 · Voz: saída (TTS);Volume e mudo persistentes entre sessões;P1;S;aberto
+OTTO-0109;03 · Voz: saída (TTS);Ignorar blocos de código na leitura, resumindo em uma frase;P1;M;aberto
+OTTO-0110;03 · Voz: saída (TTS);Não ler marcação markdown literal (asteriscos, cerquilhas);P1;S;aberto
+OTTO-0111;03 · Voz: saída (TTS);Resposta longa: falar a primeira frase e perguntar se continua;P2;M;aberto
+OTTO-0112;03 · Voz: saída (TTS);"Modo ""fala curto, escreve longo"" como padrão";P1;L;aberto
+OTTO-0113;03 · Voz: saída (TTS);Silenciar o TTS enquanto o usuário digita ou fala;P1;M;aberto
+OTTO-0114;03 · Voz: saída (TTS);Web Speech como último recurso quando não há chave de nuvem;P1;M;aberto
+OTTO-0115;03 · Voz: saída (TTS);Erro 401 do provedor diz qual chave falhou e onde trocá-la;P1;S;aberto
+OTTO-0116;03 · Voz: saída (TTS);Aviso imediato quando a chave salva é inválida;P1;S;aberto
+OTTO-0117;03 · Voz: saída (TTS);Dividir automaticamente textos acima do limite de caracteres;P1;M;aberto
+OTTO-0118;03 · Voz: saída (TTS);Voz consistente entre todas as mensagens da mesma sessão;P1;S;aberto
+OTTO-0119;03 · Voz: saída (TTS);Loop de eco (OTTO ouvindo a si mesmo) detectado e interrompido;P1;M;aberto
+OTTO-0120;03 · Voz: saída (TTS);"Modo ""só texto"" para quem não quer áudio";P1;S;aberto
+OTTO-0121;03 · Voz: saída (TTS);Abafar o leitor de tela para não falar em duplicidade;P1;M;aberto
+OTTO-0122;03 · Voz: saída (TTS);Fade-in e fade-out de 60 ms para não estalar no início e no fim;P2;S;aberto
+OTTO-0123;03 · Voz: saída (TTS);Normalizar o volume (loudness) entre provedores diferentes;P2;M;aberto
+OTTO-0124;03 · Voz: saída (TTS);Cache de áudio por frase repetida (saudação, erros);P2;M;aberto
+OTTO-0125;03 · Voz: saída (TTS);Preview da voz escolhida nas Configurações;P2;S;aberto
+OTTO-0126;03 · Voz: saída (TTS);Seleção de voz por idioma do texto, não do app;P2;M;aberto
+OTTO-0127;03 · Voz: saída (TTS);Pronúncia correta de siglas, URLs, números e valores em reais;P2;M;aberto
+OTTO-0128;03 · Voz: saída (TTS);Ler tabelas como resumo, não célula por célula;P2;M;aberto
+OTTO-0129;03 · Voz: saída (TTS);Retomar a leitura do ponto onde parou;P2;M;aberto
+OTTO-0130;03 · Voz: saída (TTS);Destaque sincronizado do trecho que está sendo lido;P2;L;aberto
+OTTO-0131;03 · Voz: saída (TTS);Continuar tocando com a tela bloqueada (Media Session);P2;M;aberto
+OTTO-0132;03 · Voz: saída (TTS);Troca de rota de áudio para fones Bluetooth sem cortar a fala;P2;M;aberto
+OTTO-0133;03 · Voz: saída (TTS);Recuperar a reprodução após perda de foco da aba;P2;M;aberto
+OTTO-0134;03 · Voz: saída (TTS);Teste de conexão por provedor de voz em Configurações;P2;M;aberto
+OTTO-0135;03 · Voz: saída (TTS);Métrica de tempo até o primeiro áudio (TTFB) no diagnóstico;P2;M;aberto
+OTTO-0136;03 · Voz: saída (TTS);Contador de caracteres e custo por sessão;P3;M;aberto
+OTTO-0137;03 · Voz: saída (TTS);Controle de pitch;P3;S;aberto
+OTTO-0138;03 · Voz: saída (TTS);Pausa configurável entre frases;P3;S;aberto
+OTTO-0139;03 · Voz: saída (TTS);Suporte mínimo a SSML (pausa e ênfase);P3;M;aberto
+OTTO-0140;03 · Voz: saída (TTS);Ler emojis como palavras, opcional;P3;S;aberto
+OTTO-0141;03 · Voz: saída (TTS);Ducking: abaixar a música do sistema enquanto fala;P3;L;aberto
+OTTO-0142;03 · Voz: saída (TTS);Estilo de fala por contexto (erro sério, sucesso, conversa);P3;L;aberto
+OTTO-0143;03 · Voz: saída (TTS);Sotaque regional PT-BR opcional;P3;M;aberto
+OTTO-0144;03 · Voz: saída (TTS);Clonagem de voz com consentimento explícito e aviso legal;P3;L;aberto
+OTTO-0145;03 · Voz: saída (TTS);Download do áudio gerado;P3;S;aberto
+OTTO-0146;03 · Voz: saída (TTS);Transcrição sob demanda ao lado de cada áudio;P3;M;aberto
+OTTO-0147;03 · Voz: saída (TTS);Idioma de saída independente do idioma de entrada;P2;M;aberto
+OTTO-0148;03 · Voz: saída (TTS);Bateria de 20 frases por idioma comparando provedores;P2;L;aberto
+OTTO-0149;03 · Voz: saída (TTS);Documentar limites, cotas e preços de cada provedor de voz;P2;S;aberto
+OTTO-0150;03 · Voz: saída (TTS);Exibir duração estimada da fala antes de tocar;P3;S;aberto
+OTTO-0151;04 · Conversa, intenção e prompt;Mensagem clara quando falta chave de API, com link para configurar;P0;S;aberto
+OTTO-0152;04 · Conversa, intenção e prompt;Classificador de intenção com fallback determinístico;P0;M;aberto
+OTTO-0153;04 · Conversa, intenção e prompt;Confirmação obrigatória antes de ação destrutiva (apagar, sobrescrever);P0;M;aberto
+OTTO-0154;04 · Conversa, intenção e prompt;Nunca inventar resultado de ferramenta: dizer o que falhou;P0;M;aberto
+OTTO-0155;04 · Conversa, intenção e prompt;Sanitizar injeção de prompt vinda de páginas web lidas;P0;M;aberto
+OTTO-0156;04 · Conversa, intenção e prompt;"Desambiguar ""isso"" e ""aquilo"" usando a última entidade citada";P1;M;aberto
+OTTO-0157;04 · Conversa, intenção e prompt;Janela de contexto adaptativa ao tamanho da conversa;P1;L;aberto
+OTTO-0158;04 · Conversa, intenção e prompt;Sumarização automática quando a janela enche;P1;L;aberto
+OTTO-0159;04 · Conversa, intenção e prompt;Comandos de controle (pare, repita, resuma, limpe) fora do modelo;P1;M;aberto
+OTTO-0160;04 · Conversa, intenção e prompt;Responder no idioma do usuário, não no idioma do app;P1;M;aberto
+OTTO-0161;04 · Conversa, intenção e prompt;Tom conciso por padrão, detalhado só quando pedido;P1;M;aberto
+OTTO-0162;04 · Conversa, intenção e prompt;"Primeira frase é a resposta; o resto é contexto";P1;S;aberto
+OTTO-0163;04 · Conversa, intenção e prompt;Mostrar de forma resumida o que o OTTO fez (traço de ferramentas);P1;M;aberto
+OTTO-0164;04 · Conversa, intenção e prompt;Perguntar antes de operações longas ou caras;P1;M;aberto
+OTTO-0165;04 · Conversa, intenção e prompt;Uma única pergunta de esclarecimento por turno;P1;S;aberto
+OTTO-0166;04 · Conversa, intenção e prompt;"Recusar com alternativa prática em vez de ""não posso""";P1;S;aberto
+OTTO-0167;04 · Conversa, intenção e prompt;Citar fontes quando usar busca na web;P1;M;aberto
+OTTO-0168;04 · Conversa, intenção e prompt;Sanitizar injeção em nomes de arquivo e na memória;P1;M;aberto
+OTTO-0169;04 · Conversa, intenção e prompt;Limite de tamanho de entrada com mensagem clara;P1;S;aberto
+OTTO-0170;04 · Conversa, intenção e prompt;Conjunto de ouro de 50 casos para regressão de prompt;P1;L;aberto
+OTTO-0171;04 · Conversa, intenção e prompt;"Reconhecer referência a mensagens anteriores (""o segundo item"")";P2;M;aberto
+OTTO-0172;04 · Conversa, intenção e prompt;Truncar histórico por relevância, não por idade;P2;L;aberto
+OTTO-0173;04 · Conversa, intenção e prompt;Deduplicar mensagens idênticas consecutivas;P2;S;aberto
+OTTO-0174;04 · Conversa, intenção e prompt;Botão de regenerar a resposta;P2;S;aberto
+OTTO-0175;04 · Conversa, intenção e prompt;Editar mensagem enviada e reenviar;P2;M;aberto
+OTTO-0176;04 · Conversa, intenção e prompt;Sugestões contextuais após cada resposta;P2;M;aberto
+OTTO-0177;04 · Conversa, intenção e prompt;"Aceitar follow-ups curtos (""e agora?"")";P2;M;aberto
+OTTO-0178;04 · Conversa, intenção e prompt;"Correção do usuário vira fato na memória (""na verdade é X"")";P2;L;aberto
+OTTO-0179;04 · Conversa, intenção e prompt;Nunca repetir a pergunta do usuário na resposta falada;P2;S;aberto
+OTTO-0180;04 · Conversa, intenção e prompt;Marcar incerteza com um nível de confiança;P2;M;aberto
+OTTO-0181;04 · Conversa, intenção e prompt;Evitar listas longas em resposta que será falada;P2;S;aberto
+OTTO-0182;04 · Conversa, intenção e prompt;Guardrails de conteúdo sensível com mensagem honesta;P2;M;aberto
+OTTO-0183;04 · Conversa, intenção e prompt;Ensinar o OTTO sobre o usuário por um perfil editável;P2;M;aberto
+OTTO-0184;04 · Conversa, intenção e prompt;Perguntar antes de salvar qualquer coisa na memória;P2;M;aberto
+OTTO-0185;04 · Conversa, intenção e prompt;Explicar quando o limite de contexto foi atingido;P2;S;aberto
+OTTO-0186;04 · Conversa, intenção e prompt;Retomar planos pendentes na próxima mensagem;P2;M;aberto
+OTTO-0187;04 · Conversa, intenção e prompt;Avaliação automática de qualidade (LLM como juiz);P2;L;aberto
+OTTO-0188;04 · Conversa, intenção e prompt;Custo estimado por conversa no log de diagnóstico;P2;M;aberto
+OTTO-0189;04 · Conversa, intenção e prompt;Registrar a decisão do roteador de intenção;P2;M;aberto
+OTTO-0190;04 · Conversa, intenção e prompt;Reproduzir conversa problemática a partir de um ID;P2;M;aberto
+OTTO-0191;04 · Conversa, intenção e prompt;Modo demonstração sem nenhuma chave de API;P2;M;aberto
+OTTO-0192;04 · Conversa, intenção e prompt;"Bloco ""o que eu entendi"" antes de ações arriscadas";P2;M;aberto
+OTTO-0193;04 · Conversa, intenção e prompt;Personalidade configurável (formal, direto, amigável);P3;M;aberto
+OTTO-0194;04 · Conversa, intenção e prompt;Nome do assistente configurável;P3;S;aberto
+OTTO-0195;04 · Conversa, intenção e prompt;Resumo do dia na abertura do app;P3;M;aberto
+OTTO-0196;04 · Conversa, intenção e prompt;Fork de conversa a partir de uma mensagem;P3;L;aberto
+OTTO-0197;04 · Conversa, intenção e prompt;Continuidade de conversa entre dispositivos;P3;L;aberto
+OTTO-0198;04 · Conversa, intenção e prompt;Reduzir emojis nas respostas;P3;S;aberto
+OTTO-0199;04 · Conversa, intenção e prompt;Comparação A/B de dois prompts;P3;M;aberto
+OTTO-0200;04 · Conversa, intenção e prompt;Biblioteca de prompts por tarefa com versão e changelog;P3;M;aberto
+OTTO-0201;05 · Streaming e latência;Não re-renderizar a lista inteira a cada token recebido;P0;M;aberto
+OTTO-0202;05 · Streaming e latência;Cancelar a requisição de verdade ao fechar, trocar de tela ou sair;P0;S;aberto
+OTTO-0203;05 · Streaming e latência;Timeout escalonado: 10 s para o primeiro byte, 30 s no total;P0;S;aberto
+OTTO-0204;05 · Streaming e latência;Garantir que a rota de stream não bufferize (flush por chunk);P0;M;aberto
+OTTO-0205;05 · Streaming e latência;Agrupar tokens em lotes de 50 ms antes de atualizar o estado;P1;M;aberto
+OTTO-0206;05 · Streaming e latência;Memoizar as bolhas de mensagem já concluídas;P1;S;aberto
+OTTO-0207;05 · Streaming e latência;Substituir o efeito de digitação por render progressivo por palavra;P1;M;aberto
+OTTO-0208;05 · Streaming e latência;Throttle do autoscroll por requestAnimationFrame;P1;S;aberto
+OTTO-0209;05 · Streaming e latência;Evitar layout thrash no autoscroll durante o streaming;P1;S;aberto
+OTTO-0210;05 · Streaming e latência;Pausar partículas e holograma enquanto o texto streama;P1;S;aberto
+OTTO-0211;05 · Streaming e latência;Retry com backoff exponencial e jitter em falhas transitórias;P1;M;aberto
+OTTO-0212;05 · Streaming e latência;Fallback automático entre provedores quando um cai;P1;L;aberto
+OTTO-0213;05 · Streaming e latência;Compressão gzip/brotli nas respostas JSON;P1;S;aberto
+OTTO-0214;05 · Streaming e latência;Keep-alive e reúso de conexão no servidor;P1;M;aberto
+OTTO-0215;05 · Streaming e latência;Limitar o histórico enviado: resumo mais as últimas N mensagens;P1;M;aberto
+OTTO-0216;05 · Streaming e latência;Desligar o bridge de build e o polling de 2,5 s em produção;P1;S;aberto
+OTTO-0217;05 · Streaming e latência;Medir o tempo até o primeiro token por modelo e exibir no diagnóstico;P1;M;aberto
+OTTO-0218;05 · Streaming e latência;Meta explícita: primeira resposta abaixo de 800 ms no p50;P1;M;aberto
+OTTO-0219;05 · Streaming e latência;Verificar com performance.mark se a animação causa jank no stream;P1;L;aberto
+OTTO-0220;05 · Streaming e latência;Usar ReadableStream nativo no cliente, sem buffer intermediário;P1;M;aberto
+OTTO-0221;05 · Streaming e latência;Virtualizar a lista de mensagens acima de 100 itens;P2;L;aberto
+OTTO-0222;05 · Streaming e latência;Preconnect e warmup de DNS/TLS para os provedores;P2;S;aberto
+OTTO-0223;05 · Streaming e latência;Circuit breaker por provedor, com aviso na UI;P2;L;aberto
+OTTO-0224;05 · Streaming e latência;Cache HTTP dos assets com hash de conteúdo;P2;S;aberto
+OTTO-0225;05 · Streaming e latência;Service worker para assets estáticos;P2;L;aberto
+OTTO-0226;05 · Streaming e latência;Prefetch das telas pesadas no tempo ocioso;P2;S;aberto
+OTTO-0227;05 · Streaming e latência;Prefetch do próximo passo do plano em execução;P3;M;aberto
+OTTO-0228;05 · Streaming e latência;Dividir o bundle em vendor, ui e services;P2;M;aberto
+OTTO-0229;05 · Streaming e latência;Corrigir o carregamento do CSS crítico;P2;M;aberto
+OTTO-0230;05 · Streaming e latência;Fonte com display swap e preload;P2;S;aberto
+OTTO-0231;05 · Streaming e latência;Imagens com dimensões explícitas para não deslocar o layout;P2;S;aberto
+OTTO-0232;05 · Streaming e latência;Cache das decisões do classificador de intenção;P2;M;aberto
+OTTO-0233;05 · Streaming e latência;Limitar o tamanho do payload de histórico por requisição;P2;S;aberto
+OTTO-0234;05 · Streaming e latência;Compressão dos payloads grandes (exportações, memória);P2;S;aberto
+OTTO-0235;05 · Streaming e latência;Carregar hologramas só quando visíveis (IntersectionObserver);P2;S;aberto
+OTTO-0236;05 · Streaming e latência;Adiar animações pesadas para o tempo ocioso;P2;M;aberto
+OTTO-0237;05 · Streaming e latência;Detectar conexão lenta e reduzir efeitos automaticamente;P2;M;aberto
+OTTO-0238;05 · Streaming e latência;Modo economia que desliga animações e partículas;P2;S;aberto
+OTTO-0239;05 · Streaming e latência;Orçamento de bundle com alerta no CI (limite de 450 kB);P2;M;aberto
+OTTO-0240;05 · Streaming e latência;Relatório visual de composição do bundle;P2;S;aberto
+OTTO-0241;05 · Streaming e latência;Remover dependências não utilizadas do package.json;P2;S;aberto
+OTTO-0242;05 · Streaming e latência;Medir e publicar p50, p95 e p99 no painel de saúde;P2;M;aberto
+OTTO-0243;05 · Streaming e latência;Medir FPS durante o streaming e avisar em desenvolvimento;P2;M;aberto
+OTTO-0244;05 · Streaming e latência;Adiar a síntese de voz até a primeira frase completa;P1;M;aberto
+OTTO-0245;05 · Streaming e latência;Pré-carregar o classificador de intenção leve;P3;M;aberto
+OTTO-0246;05 · Streaming e latência;Cache de respostas frequentes (saudações, status);P3;M;aberto
+OTTO-0247;05 · Streaming e latência;Compressão de áudio de entrada antes do STT;P2;M;aberto
+OTTO-0248;05 · Streaming e latência;Reduzir o custo do primeiro paint (above the fold enxuto);P2;M;aberto
+OTTO-0249;05 · Streaming e latência;Instrumentar Web Vitals (LCP, INP, CLS) de verdade;P2;M;aberto
+OTTO-0250;05 · Streaming e latência;Garantir que o proxy repasse o stream sem buffering (cache desligado);P1;M;aberto
+OTTO-0251;06 · Memória de longo prazo;Persistir a memória no servidor com esquema versionado;P1;L;aberto
+OTTO-0252;06 · Memória de longo prazo;Migrar o que hoje vive em localStorage para o servidor;P1;M;aberto
+OTTO-0253;06 · Memória de longo prazo;Tela de memória com busca, filtro, edição e exclusão;P1;M;aberto
+OTTO-0254;06 · Memória de longo prazo;Classificar memória por tipo: fato, preferência, projeto, temporária;P1;M;aberto
+OTTO-0255;06 · Memória de longo prazo;Expiração automática das memórias temporárias;P1;M;aberto
+OTTO-0256;06 · Memória de longo prazo;"Botão ""esquecer isso"" em cada mensagem";P1;M;aberto
+OTTO-0257;06 · Memória de longo prazo;Nunca gravar dado sensível (documento, cartão, senha);P1;M;aberto
+OTTO-0258;06 · Memória de longo prazo;Busca por palavra-chave com fallback simples;P1;M;aberto
+OTTO-0259;06 · Memória de longo prazo;Ordenar resultados por relevância e recência;P1;M;aberto
+OTTO-0260;06 · Memória de longo prazo;Injetar memória no prompt com orçamento de tokens explícito;P1;M;aberto
+OTTO-0261;06 · Memória de longo prazo;Não injetar memória irrelevante (ruído piora a resposta);P1;M;aberto
+OTTO-0262;06 · Memória de longo prazo;Desfazer a exclusão de uma memória;P1;S;aberto
+OTTO-0263;06 · Memória de longo prazo;Testes cobrindo gravar, recuperar e apagar;P1;M;aberto
+OTTO-0264;06 · Memória de longo prazo;Limpar toda a memória em um clique, com confirmação dupla;P1;S;aberto
+OTTO-0265;06 · Memória de longo prazo;Deduplicar memórias semelhantes antes de gravar;P2;M;aberto
+OTTO-0266;06 · Memória de longo prazo;Pontuação de confiança por memória;P2;M;aberto
+OTTO-0267;06 · Memória de longo prazo;Mostrar a mensagem de origem de cada memória;P2;M;aberto
+OTTO-0268;06 · Memória de longo prazo;Importar e exportar memória em JSON;P2;M;aberto
+OTTO-0269;06 · Memória de longo prazo;Criptografia em repouso;P2;L;aberto
+OTTO-0270;06 · Memória de longo prazo;Detecção de PII com mascaramento automático;P2;L;aberto
+OTTO-0271;06 · Memória de longo prazo;Limite de itens por usuário com aviso ao chegar perto;P2;S;aberto
+OTTO-0272;06 · Memória de longo prazo;Busca semântica com embeddings;P2;L;aberto
+OTTO-0273;06 · Memória de longo prazo;Auditoria: quando e por que cada memória foi gravada;P2;M;aberto
+OTTO-0274;06 · Memória de longo prazo;Memória por projeto, com contextos separados;P2;M;aberto
+OTTO-0275;06 · Memória de longo prazo;Backup diário rotativo;P2;M;aberto
+OTTO-0276;06 · Memória de longo prazo;Restauração a partir de backup;P2;M;aberto
+OTTO-0277;06 · Memória de longo prazo;Índice por tags e filtro combinado;P2;M;aberto
+OTTO-0278;06 · Memória de longo prazo;"Explicar ""por que o OTTO lembrou disso""";P2;M;aberto
+OTTO-0279;06 · Memória de longo prazo;"Memória negativa explícita (""não gosto de X"")";P2;M;aberto
+OTTO-0280;06 · Memória de longo prazo;Atualizar memória conflitante em vez de duplicar;P2;L;aberto
+OTTO-0281;06 · Memória de longo prazo;Modo privado que não grava nada;P2;M;aberto
+OTTO-0282;06 · Memória de longo prazo;Preferências de UI na memória (tema, voz, velocidade);P2;S;aberto
+OTTO-0283;06 · Memória de longo prazo;Preferências por dispositivo versus por conta;P2;M;aberto
+OTTO-0284;06 · Memória de longo prazo;Visualização planetária com zoom, filtros e legenda;P2;L;aberto
+OTTO-0285;06 · Memória de longo prazo;Estados vazios explicando o que é memória e para que serve;P2;S;aberto
+OTTO-0286;06 · Memória de longo prazo;Painel de uso: quantidade, tamanho e crescimento;P2;S;aberto
+OTTO-0287;06 · Memória de longo prazo;Compatibilidade retroativa do formato ao migrar;P2;M;aberto
+OTTO-0288;06 · Memória de longo prazo;Documentar o modelo de dados de memória;P2;S;aberto
+OTTO-0289;06 · Memória de longo prazo;Revisão periódica das memórias não usadas em 90 dias;P3;M;aberto
+OTTO-0290;06 · Memória de longo prazo;Memória compartilhada entre dispositivos;P3;L;aberto
+OTTO-0291;06 · Memória de longo prazo;Resolução de conflito de sincronização, com regra explícita;P3;L;aberto
+OTTO-0292;06 · Memória de longo prazo;Favoritar memórias para injeção prioritária;P3;S;aberto
+OTTO-0293;06 · Memória de longo prazo;Memória de arquivos indexados;P3;L;aberto
+OTTO-0294;06 · Memória de longo prazo;Indexar pastas de projeto do usuário;P3;L;aberto
+OTTO-0295;06 · Memória de longo prazo;Reindexação incremental ao detectar mudança;P3;L;aberto
+OTTO-0296;06 · Memória de longo prazo;Resumo automático de projetos longos;P3;M;aberto
+OTTO-0297;06 · Memória de longo prazo;Log de leitura de memória para auditoria de privacidade;P3;M;aberto
+OTTO-0298;06 · Memória de longo prazo;Alertas quando a cota de memória está próxima do limite;P3;S;aberto
+OTTO-0299;06 · Memória de longo prazo;Suporte a sinônimos em português na busca;P3;M;aberto
+OTTO-0300;06 · Memória de longo prazo;Benchmark de recuperação (precisão nos 5 primeiros);P3;M;aberto
+OTTO-0301;07 · Modo Agente e planos;Persistir planos e retomar depois de recarregar a página;P0;M;aberto
+OTTO-0302;07 · Modo Agente e planos;Estado explícito por etapa: pendente, rodando, concluída, falhou, pulada;P0;M;aberto
+OTTO-0303;07 · Modo Agente e planos;Falha parcial continua o que é possível e reporta o que não deu;P0;M;aberto
+OTTO-0304;07 · Modo Agente e planos;Timeout individual por etapa;P0;S;aberto
+OTTO-0305;07 · Modo Agente e planos;Cancelar o plano inteiro liberando processos e recursos;P0;M;aberto
+OTTO-0306;07 · Modo Agente e planos;Aprovação humana obrigatória antes de etapa destrutiva;P0;M;aberto
+OTTO-0307;07 · Modo Agente e planos;Nunca executar comando de shell não revisado em modo seguro;P0;M;aberto
+OTTO-0308;07 · Modo Agente e planos;Botão de repetir a etapa e de repetir a partir dela;P1;S;aberto
+OTTO-0309;07 · Modo Agente e planos;Log de execução com entrada e saída de cada etapa;P1;M;aberto
+OTTO-0310;07 · Modo Agente e planos;Limite de etapas e de tempo total por plano;P1;S;aberto
+OTTO-0311;07 · Modo Agente e planos;Progresso real, baseado em etapas concluídas;P1;S;aberto
+OTTO-0312;07 · Modo Agente e planos;Resumo final em até três linhas;P1;S;aberto
+OTTO-0313;07 · Modo Agente e planos;Editar o plano antes de executar;P1;M;aberto
+OTTO-0314;07 · Modo Agente e planos;Perguntar quando uma etapa é ambígua, em vez de adivinhar;P1;M;aberto
+OTTO-0315;07 · Modo Agente e planos;"Modo ""explicar antes de agir"" ligado por padrão";P1;S;aberto
+OTTO-0316;07 · Modo Agente e planos;Foco preso e navegação por teclado no modal do agente;P1;S;aberto
+OTTO-0317;07 · Modo Agente e planos;Retomada após queda de rede do servidor;P1;L;aberto
+OTTO-0318;07 · Modo Agente e planos;Teste E2E de um plano de três etapas;P1;M;aberto
+OTTO-0319;07 · Modo Agente e planos;Teste de falha proposital na segunda etapa;P1;M;aberto
+OTTO-0320;07 · Modo Agente e planos;Plano que falha duas vezes pede ajuda ao usuário em vez de insistir;P1;M;aberto
+OTTO-0321;07 · Modo Agente e planos;Orçamento de custo por plano;P2;M;aberto
+OTTO-0322;07 · Modo Agente e planos;Detectar plano circular ou repetitivo;P2;M;aberto
+OTTO-0323;07 · Modo Agente e planos;Deduplicar etapas equivalentes;P2;M;aberto
+OTTO-0324;07 · Modo Agente e planos;Ordenar etapas por dependência;P2;L;aberto
+OTTO-0325;07 · Modo Agente e planos;Notificar ao terminar em segundo plano;P2;M;aberto
+OTTO-0326;07 · Modo Agente e planos;Exportar plano em markdown;P2;S;aberto
+OTTO-0327;07 · Modo Agente e planos;Templates de plano: relatório, refatoração, pesquisa;P2;M;aberto
+OTTO-0328;07 · Modo Agente e planos;Histórico de planos com resultado;P2;M;aberto
+OTTO-0329;07 · Modo Agente e planos;Retry inteligente usando o contexto do erro;P2;L;aberto
+OTTO-0330;07 · Modo Agente e planos;Sandbox isolado por plano;P1;L;aberto
+OTTO-0331;07 · Modo Agente e planos;Limpeza de artefatos temporários ao encerrar;P2;S;aberto
+OTTO-0332;07 · Modo Agente e planos;Aviso quando o plano excede o contexto do modelo;P2;M;aberto
+OTTO-0333;07 · Modo Agente e planos;"Modo ""agir e explicar depois"" para tarefas simples";P2;M;aberto
+OTTO-0334;07 · Modo Agente e planos;Estado do agente visível no header sem poluir;P2;S;aberto
+OTTO-0335;07 · Modo Agente e planos;Idempotência das ferramentas em caso de retry;P2;L;aberto
+OTTO-0336;07 · Modo Agente e planos;Integrar decisões do plano à memória;P2;M;aberto
+OTTO-0337;07 · Modo Agente e planos;Relatório de diff ao final da execução;P2;M;aberto
+OTTO-0338;07 · Modo Agente e planos;Rollback das alterações de arquivos;P2;L;aberto
+OTTO-0339;07 · Modo Agente e planos;Backup automático antes de qualquer edição;P2;M;aberto
+OTTO-0340;07 · Modo Agente e planos;Métrica de sucesso por tipo de etapa;P2;M;aberto
+OTTO-0341;07 · Modo Agente e planos;Auditoria de todas as ações executadas;P2;M;aberto
+OTTO-0342;07 · Modo Agente e planos;ADR documentando o orquestrador;P2;S;aberto
+OTTO-0343;07 · Modo Agente e planos;Marcar etapas paralelizáveis com segurança;P3;L;aberto
+OTTO-0344;07 · Modo Agente e planos;Confirmação em lote de várias ações;P3;M;aberto
+OTTO-0345;07 · Modo Agente e planos;Fila de planos com prioridade;P3;M;aberto
+OTTO-0346;07 · Modo Agente e planos;Agendamento de plano por horário;P3;L;aberto
+OTTO-0347;07 · Modo Agente e planos;Gatilhos automáticos (ao conectar, ao abrir arquivo);P3;L;aberto
+OTTO-0348;07 · Modo Agente e planos;Exibir a justificativa de cada etapa;P3;M;aberto
+OTTO-0349;07 · Modo Agente e planos;Limite de custo por usuário por dia;P3;M;aberto
+OTTO-0350;07 · Modo Agente e planos;Anunciar o progresso do plano em região aria-live;P1;S;aberto
+OTTO-0351;08 · Ferramentas, arquivos e sandbox;Restringir leitura e escrita à raiz do workspace;P0;M;aberto
+OTTO-0352;08 · Ferramentas, arquivos e sandbox;Testes de path traversal, symlink e sequências codificadas;P0;M;aberto
+OTTO-0353;08 · Ferramentas, arquivos e sandbox;Sandbox com limite de CPU e memória;P0;M;aberto
+OTTO-0354;08 · Ferramentas, arquivos e sandbox;Timeout obrigatório em toda execução de código;P0;S;aberto
+OTTO-0355;08 · Ferramentas, arquivos e sandbox;Acesso ao sistema de arquivos do host bloqueado no sandbox;P0;L;aberto
+OTTO-0356;08 · Ferramentas, arquivos e sandbox;Execução de comando com aprovação e explicação do efeito;P0;M;aberto
+OTTO-0357;08 · Ferramentas, arquivos e sandbox;Diff antes de sobrescrever qualquer arquivo;P1;M;aberto
+OTTO-0358;08 · Ferramentas, arquivos e sandbox;Backup automático antes de escrita;P1;M;aberto
+OTTO-0359;08 · Ferramentas, arquivos e sandbox;Confirmação de exclusão mostrando quantos itens serão afetados;P1;S;aberto
+OTTO-0360;08 · Ferramentas, arquivos e sandbox;Lixeira em vez de exclusão imediata;P1;M;aberto
+OTTO-0361;08 · Ferramentas, arquivos e sandbox;Rede desligada por padrão no sandbox;P1;M;aberto
+OTTO-0362;08 · Ferramentas, arquivos e sandbox;Limpeza de processos órfãos após execução;P1;M;aberto
+OTTO-0363;08 · Ferramentas, arquivos e sandbox;Lista de comandos explicitamente bloqueados;P1;M;aberto
+OTTO-0364;08 · Ferramentas, arquivos e sandbox;Busca em arquivos com limites de tempo e resultado;P1;M;aberto
+OTTO-0365;08 · Ferramentas, arquivos e sandbox;Criar, renomear e mover arquivos e pastas;P1;M;aberto
+OTTO-0366;08 · Ferramentas, arquivos e sandbox;Ler arquivo grande em partes, sem estourar a memória;P1;M;aberto
+OTTO-0367;08 · Ferramentas, arquivos e sandbox;Detectar prompt interativo que travaria a execução;P1;M;aberto
+OTTO-0368;08 · Ferramentas, arquivos e sandbox;Download de arquivos gerados;P1;M;aberto
+OTTO-0369;08 · Ferramentas, arquivos e sandbox;Validação de tipo e tamanho no upload;P1;S;aberto
+OTTO-0370;08 · Ferramentas, arquivos e sandbox;Mensagens de erro de ferramenta em português claro;P1;S;aberto
+OTTO-0371;08 · Ferramentas, arquivos e sandbox;Testes de isolamento e timeout do sandbox;P1;L;aberto
+OTTO-0372;08 · Ferramentas, arquivos e sandbox;Abrir o arquivo citado na resposta com um clique;P1;M;aberto
+OTTO-0373;08 · Ferramentas, arquivos e sandbox;Editor inline de arquivo com salvamento;P2;L;aberto
+OTTO-0374;08 · Ferramentas, arquivos e sandbox;Terminal com saída em streaming;P2;M;aberto
+OTTO-0375;08 · Ferramentas, arquivos e sandbox;Histórico de comandos executados;P2;M;aberto
+OTTO-0376;08 · Ferramentas, arquivos e sandbox;Repetir o último comando;P2;S;aberto
+OTTO-0377;08 · Ferramentas, arquivos e sandbox;Copiar a saída do terminal;P2;S;aberto
+OTTO-0378;08 · Ferramentas, arquivos e sandbox;"Limite de tamanho de saída com ""ver tudo""";P2;S;aberto
+OTTO-0379;08 · Ferramentas, arquivos e sandbox;Preview de imagem e PDF;P2;M;aberto
+OTTO-0380;08 · Ferramentas, arquivos e sandbox;Renderizar markdown, CSV e JSON com visualização rica;P2;M;aberto
+OTTO-0381;08 · Ferramentas, arquivos e sandbox;Arrastar e soltar arquivos na janela;P2;M;aberto
+OTTO-0382;08 · Ferramentas, arquivos e sandbox;Barra de progresso de upload;P2;S;aberto
+OTTO-0383;08 · Ferramentas, arquivos e sandbox;Limpeza automática de uploads antigos;P2;S;aberto
+OTTO-0384;08 · Ferramentas, arquivos e sandbox;Ambiente com dependências pré-instaladas;P2;L;aberto
+OTTO-0385;08 · Ferramentas, arquivos e sandbox;Versões pinadas de runtime e bibliotecas;P2;M;aberto
+OTTO-0386;08 · Ferramentas, arquivos e sandbox;Preservar quebras de linha CRLF e LF;P2;S;aberto
+OTTO-0387;08 · Ferramentas, arquivos e sandbox;Detecção de encoding na leitura;P3;S;aberto
+OTTO-0388;08 · Ferramentas, arquivos e sandbox;Cache de instalação de pacotes;P3;L;aberto
+OTTO-0389;08 · Ferramentas, arquivos e sandbox;Suporte a stdin nos comandos;P3;M;aberto
+OTTO-0390;08 · Ferramentas, arquivos e sandbox;Referenciar arquivo com @ no chat;P2;M;aberto
+OTTO-0391;08 · Ferramentas, arquivos e sandbox;Autocomplete de caminhos ao digitar @;P3;M;aberto
+OTTO-0392;08 · Ferramentas, arquivos e sandbox;Preservar permissões de arquivo ao mover;P3;M;aberto
+OTTO-0393;08 · Ferramentas, arquivos e sandbox;Desfazer a última escrita;P3;L;aberto
+OTTO-0394;08 · Ferramentas, arquivos e sandbox;Watcher de arquivos com evento no chat;P3;L;aberto
+OTTO-0395;08 · Ferramentas, arquivos e sandbox;Compartilhar arquivo por link temporário;P3;L;aberto
+OTTO-0396;08 · Ferramentas, arquivos e sandbox;Varredura básica de arquivos maliciosos no upload;P3;L;aberto
+OTTO-0397;08 · Ferramentas, arquivos e sandbox;Catálogo de ferramentas visível na interface;P2;M;aberto
+OTTO-0398;08 · Ferramentas, arquivos e sandbox;Telemetria de uso e falha por ferramenta;P2;M;aberto
+OTTO-0399;08 · Ferramentas, arquivos e sandbox;Documentar capacidades e limites de cada ferramenta;P2;S;aberto
+OTTO-0400;08 · Ferramentas, arquivos e sandbox;Executar no sandbox apenas binários presentes na allowlist;P1;M;aberto
+OTTO-0401;09 · Data Hub;Persistir datasets no IndexedDB com queda graciosa para memória;P1;M;aberto
+OTTO-0402;09 · Data Hub;Limite de tamanho por dataset, com aviso antes de estourar;P1;S;aberto
+OTTO-0403;09 · Data Hub;Importar CSV, JSON e XLSX arrastando para o painel;P1;M;aberto
+OTTO-0404;09 · Data Hub;Detectar delimitador e encoding do CSV automaticamente;P2;M;aberto
+OTTO-0405;09 · Data Hub;Erros de parse indicando linha e coluna exatas;P1;S;aberto
+OTTO-0406;09 · Data Hub;Tabela com cabeçalho fixo e primeira coluna fixa;P1;S;aberto
+OTTO-0407;09 · Data Hub;Paginação com virtualização para muitas linhas;P2;M;aberto
+OTTO-0408;09 · Data Hub;Ordenação por coluna;P2;S;aberto
+OTTO-0409;09 · Data Hub;Filtros por coluna com busca;P2;M;aberto
+OTTO-0410;09 · Data Hub;Agregações rápidas: soma, média, mínimo, máximo, contagem;P2;M;aberto
+OTTO-0411;09 · Data Hub;Escolher automaticamente o tipo de gráfico adequado aos dados;P2;L;aberto
+OTTO-0412;09 · Data Hub;Exportar gráfico em PNG e SVG;P2;M;aberto
+OTTO-0413;09 · Data Hub;Exportar tabela filtrada em CSV;P2;S;aberto
+OTTO-0414;09 · Data Hub;Auditar contraste de todos os estados no tema claro;P1;S;aberto
+OTTO-0415;09 · Data Hub;Paleta de séries acessível para daltonismo;P2;M;aberto
+OTTO-0416;09 · Data Hub;Cópia de célula e de linha;P2;S;aberto
+OTTO-0417;09 · Data Hub;Edição inline de célula com validação de tipo;P2;M;aberto
+OTTO-0418;09 · Data Hub;Desfazer a edição de célula;P2;M;aberto
+OTTO-0419;09 · Data Hub;Navegar entre as mudanças no visualizador de diff;P2;M;aberto
+OTTO-0420;09 · Data Hub;Opção de ignorar espaços no diff;P3;S;aberto
+OTTO-0421;09 · Data Hub;Descrição do dataset gerada pelo OTTO;P2;M;aberto
+OTTO-0422;09 · Data Hub;Perguntar em linguagem natural sobre o dataset;P2;L;aberto
+OTTO-0423;09 · Data Hub;Amostragem automática acima de 10 mil linhas;P2;M;aberto
+OTTO-0424;09 · Data Hub;Leitura em streaming para arquivos grandes;P2;L;aberto
+OTTO-0425;09 · Data Hub;Compressão dos blobs antes de guardar;P2;M;aberto
+OTTO-0426;09 · Data Hub;Aviso claro quando um blob expira;P1;S;aberto
+OTTO-0427;09 · Data Hub;Monitorar a cota do navegador e limpar o que é antigo;P1;M;aberto
+OTTO-0428;09 · Data Hub;Migração de formato de armazenamento com versão;P2;M;aberto
+OTTO-0429;09 · Data Hub;Rascunho preservado ao fechar e reabrir o painel;P3;S;aberto
+OTTO-0430;09 · Data Hub;Aviso de perda ao fechar com edição não salva;P2;S;aberto
+OTTO-0431;09 · Data Hub;Atalhos Cmd/Ctrl+S para salvar e Esc para fechar;P2;S;aberto
+OTTO-0432;09 · Data Hub;Foco preso e navegação por teclado no painel;P1;S;aberto
+OTTO-0433;09 · Data Hub;Scroll da página travado enquanto o painel abre;P1;S;aberto
+OTTO-0434;09 · Data Hub;Sheet no mobile e painel central no desktop;P2;M;aberto
+OTTO-0435;09 · Data Hub;Link direto para um dataset específico;P3;M;aberto
+OTTO-0436;09 · Data Hub;Compartilhar dataset como arquivo ou link;P3;L;aberto
+OTTO-0437;09 · Data Hub;Notas e comentários por dataset;P3;M;aberto
+OTTO-0438;09 · Data Hub;"Selo ""gerado pelo agente"" com origem rastreável";P2;M;aberto
+OTTO-0439;09 · Data Hub;Ligar cada dataset à etapa do plano que o gerou;P2;M;aberto
+OTTO-0440;09 · Data Hub;Estado vazio com exemplos do que dá para fazer;P2;S;aberto
+OTTO-0441;09 · Data Hub;Testes de parse para CSV malformado e vazio;P1;M;aberto
+OTTO-0442;09 · Data Hub;Teste de performance com 50 mil linhas;P2;M;aberto
+OTTO-0443;09 · Data Hub;Detecção de valores fora do padrão (outliers);P3;L;aberto
+OTTO-0444;09 · Data Hub;Histórico de versões do dataset;P3;L;aberto
+OTTO-0445;09 · Data Hub;Consulta SQL local sobre o dataset;P3;L;aberto
+OTTO-0446;09 · Data Hub;Excluir dataset com confirmação e opção de desfazer;P1;S;aberto
+OTTO-0447;09 · Data Hub;Métricas de uso do Data Hub;P3;S;aberto
+OTTO-0448;09 · Data Hub;Documentar o formato interno de dataset;P2;S;aberto
+OTTO-0449;09 · Data Hub;Revisar o tema escuro depois das mudanças do claro;P2;S;aberto
+OTTO-0450;09 · Data Hub;Garantir que nada do Data Hub dependa de hover;P2;S;aberto
+OTTO-0451;10 · Hologramas e visualização;Reduzir a contagem de partículas em aparelhos modestos;P1;M;aberto
+OTTO-0452;10 · Hologramas e visualização;Limitar partículas a 30 fps;P2;S;aberto
+OTTO-0453;10 · Hologramas e visualização;Desligar animações com prefers-reduced-motion;P1;S;aberto
+OTTO-0454;10 · Hologramas e visualização;Parar a animação com a aba em segundo plano;P1;S;aberto
+OTTO-0455;10 · Hologramas e visualização;Pausar quando o elemento sai da viewport;P2;S;aberto
+OTTO-0456;10 · Hologramas e visualização;Corrigir vazamento do canvas recriado a cada montagem;P1;M;aberto
+OTTO-0457;10 · Hologramas e visualização;Respeitar o devicePixelRatio em telas retina;P2;S;aberto
+OTTO-0458;10 · Hologramas e visualização;Fallback estático quando WebGL não está disponível;P1;M;aberto
+OTTO-0459;10 · Hologramas e visualização;Contraste dos textos do holograma no tema claro;P1;M;aberto
+OTTO-0460;10 · Hologramas e visualização;Legibilidade e cópia de texto no holograma de texto;P1;S;aberto
+OTTO-0461;10 · Hologramas e visualização;Texto alternativo e decodificação tardia nas imagens;P2;S;aberto
+OTTO-0462;10 · Hologramas e visualização;Navegação por teclado na galeria;P2;S;aberto
+OTTO-0463;10 · Hologramas e visualização;Eixos, rótulos e valores legíveis no gráfico holográfico;P2;M;aberto
+OTTO-0464;10 · Hologramas e visualização;Tooltip com valores ao passar o mouse;P2;M;aberto
+OTTO-0465;10 · Hologramas e visualização;Paleta acessível nos hologramas;P2;M;aberto
+OTTO-0466;10 · Hologramas e visualização;Respeitar a escala de fonte configurada no sistema;P2;S;aberto
+OTTO-0467;10 · Hologramas e visualização;Zoom sem quebrar o layout;P3;M;aberto
+OTTO-0468;10 · Hologramas e visualização;Transição entre hologramas sem piscar;P2;M;aberto
+OTTO-0469;10 · Hologramas e visualização;Fila de hologramas quando vários chegam juntos;P2;S;aberto
+OTTO-0470;10 · Hologramas e visualização;Limite de hologramas simultâneos;P2;S;aberto
+OTTO-0471;10 · Hologramas e visualização;Estado de carregamento consistente entre tipos;P2;S;aberto
+OTTO-0472;10 · Hologramas e visualização;Placeholder quando a imagem falha (404);P1;S;aberto
+OTTO-0473;10 · Hologramas e visualização;Timeout no proxy de imagem;P1;S;aberto
+OTTO-0474;10 · Hologramas e visualização;Cache das imagens buscadas;P2;M;aberto
+OTTO-0475;10 · Hologramas e visualização;Evitar deslocamento de layout na formação;P2;S;aberto
+OTTO-0476;10 · Hologramas e visualização;Fechar com Esc e com clique fora;P1;S;aberto
+OTTO-0477;10 · Hologramas e visualização;Foco preso no modal do holograma;P1;S;aberto
+OTTO-0478;10 · Hologramas e visualização;Arrastar a janela sem deixá-la sair da tela;P1;S;aberto
+OTTO-0479;10 · Hologramas e visualização;Restaurar a posição da janela ao reabrir;P3;S;aberto
+OTTO-0480;10 · Hologramas e visualização;Redimensionar a janela;P3;M;aberto
+OTTO-0481;10 · Hologramas e visualização;Encaixe nas bordas (snap);P3;S;aberto
+OTTO-0482;10 · Hologramas e visualização;Várias janelas sem sobreposição caótica;P3;M;aberto
+OTTO-0483;10 · Hologramas e visualização;Empilhamento e z-index coerentes;P2;S;aberto
+OTTO-0484;10 · Hologramas e visualização;Minimizar e restaurar;P3;M;aberto
+OTTO-0485;10 · Hologramas e visualização;Título e botão fechar sempre visíveis;P2;S;aberto
+OTTO-0486;10 · Hologramas e visualização;Arraste por toque na barra de título;P2;M;aberto
+OTTO-0487;10 · Hologramas e visualização;Não bloquear o scroll da página com janela aberta;P2;S;aberto
+OTTO-0488;10 · Hologramas e visualização;Entrada em 760 ms nos shells;P2;S;aberto
+OTTO-0489;10 · Hologramas e visualização;Saída mais rápida que a entrada (280 ms);P2;S;aberto
+OTTO-0490;10 · Hologramas e visualização;Sombra consistente entre todas as janelas;P3;S;aberto
+OTTO-0491;10 · Hologramas e visualização;Adaptar hologramas ao tema claro;P1;M;aberto
+OTTO-0492;10 · Hologramas e visualização;Reduzir o blur de fundo no mobile (caro);P1;M;aberto
+OTTO-0493;10 · Hologramas e visualização;Preferir transform e opacity em vez de top e left;P1;S;aberto
+OTTO-0494;10 · Hologramas e visualização;Nunca animar filter: blur em painel grande;P1;S;aberto
+OTTO-0495;10 · Hologramas e visualização;Feedback tátil leve ao formar, no mobile;P3;S;aberto
+OTTO-0496;10 · Hologramas e visualização;Testes de snapshot visual dos hologramas;P3;L;aberto
+OTTO-0497;10 · Hologramas e visualização;Documentar o sistema de hologramas;P2;S;aberto
+OTTO-0498;10 · Hologramas e visualização;Telemetria de FPS médio em produção;P3;M;aberto
+OTTO-0499;10 · Hologramas e visualização;Revisar todos os estados vazios e de erro;P2;S;aberto
+OTTO-0500;10 · Hologramas e visualização;Garantir que nenhuma informação exista só na animação;P1;S;aberto
+OTTO-0501;11 · Design system e temas;Auditoria de contraste automatizada por script, rodando no CI;P1;M;aberto
+OTTO-0502;11 · Design system e temas;Cor única como fonte de verdade em variáveis CSS;P1;L;aberto
+OTTO-0503;11 · Design system e temas;Trocar classes soltas (slate-300, white-20) por tokens semânticos;P1;L;aberto
+OTTO-0504;11 · Design system e temas;Padronizar estados: hover, active, focus, disabled e loading;P1;M;aberto
+OTTO-0505;11 · Design system e temas;Componente único de botão, com variantes e tamanhos;P1;L;aberto
+OTTO-0506;11 · Design system e temas;Componente base de modal e painel;P1;L;aberto
+OTTO-0507;11 · Design system e temas;Foco visível global via focus-visible;P1;S;aberto
+OTTO-0508;11 · Design system e temas;Transição entre temas sem flash branco;P1;S;aberto
+OTTO-0509;11 · Design system e temas;Toque mínimo de 44 px em todos os alvos;P1;S;aberto
+OTTO-0510;11 · Design system e temas;Erro sempre com cor, ícone e texto (nunca só cor);P1;S;aberto
+OTTO-0511;11 · Design system e temas;Revisar o contraste do tema escuro depois do claro;P1;M;aberto
+OTTO-0512;11 · Design system e temas;Escala tipográfica com cinco ou seis tamanhos;P2;M;aberto
+OTTO-0513;11 · Design system e temas;Escala de espaçamento em múltiplos de 4;P2;M;aberto
+OTTO-0514;11 · Design system e temas;Raios consistentes (8, 12, 16, 24, 28);P2;S;aberto
+OTTO-0515;11 · Design system e temas;Sombras em quatro níveis nomeados;P2;S;aberto
+OTTO-0516;11 · Design system e temas;Componente de chip e tag;P2;S;aberto
+OTTO-0517;11 · Design system e temas;Componente de input com rótulo, ajuda e erro;P2;M;aberto
+OTTO-0518;11 · Design system e temas;Componente de tooltip;P2;M;aberto
+OTTO-0519;11 · Design system e temas;Componente de toast;P2;M;aberto
+OTTO-0520;11 · Design system e temas;Componente de skeleton;P2;M;aberto
+OTTO-0521;11 · Design system e temas;Componente de lista e tabela;P2;L;aberto
+OTTO-0522;11 · Design system e temas;Modo de alto contraste para baixa visão;P2;M;aberto
+OTTO-0523;11 · Design system e temas;Tema automático pelo sistema, com escolha manual persistida;P2;M;aberto
+OTTO-0524;11 · Design system e temas;Ícones consistentes em traço e tamanho;P2;S;aberto
+OTTO-0525;11 · Design system e temas;Regra clara para uso de gradiente;P2;S;aberto
+OTTO-0526;11 · Design system e temas;Vidro (glass) com custo controlado no mobile;P2;M;aberto
+OTTO-0527;11 · Design system e temas;Seleção de texto consistente nos dois temas;P2;S;aberto
+OTTO-0528;11 · Design system e temas;Barra de rolagem consistente nos dois temas;P2;S;aberto
+OTTO-0529;11 · Design system e temas;Hierarquia de títulos definida;P2;S;aberto
+OTTO-0530;11 · Design system e temas;Truncamento com tooltip e sem corte de palavra;P2;S;aberto
+OTTO-0531;11 · Design system e temas;Skeleton em vez de spinner onde a forma é conhecida;P2;M;aberto
+OTTO-0532;11 · Design system e temas;Microcopy padronizada (mesmo verbo para a mesma ação);P2;M;aberto
+OTTO-0533;11 · Design system e temas;Glossário do produto para nomes de recurso;P2;S;aberto
+OTTO-0534;11 · Design system e temas;Confirmação de sucesso discreta, sem banner;P2;S;aberto
+OTTO-0535;11 · Design system e temas;Z-index documentado em camadas;P2;S;aberto
+OTTO-0536;11 · Design system e temas;Breakpoints documentados;P2;S;aberto
+OTTO-0537;11 · Design system e temas;Densidade compacta e confortável;P3;M;aberto
+OTTO-0538;11 · Design system e temas;Cor de acento configurável;P3;M;aberto
+OTTO-0539;11 · Design system e temas;Ilustrações para estados vazios;P3;M;aberto
+OTTO-0540;11 · Design system e temas;Bordas de 1 px nítidas em telas retina;P3;S;aberto
+OTTO-0541;11 · Design system e temas;Rótulos em caixa alta com tracking consistente;P3;S;aberto
+OTTO-0542;11 · Design system e temas;Números tabulares em métricas;P3;S;aberto
+OTTO-0543;11 · Design system e temas;Página de componentes (/dev/ui) como catálogo vivo;P3;L;aberto
+OTTO-0544;11 · Design system e temas;Remover estilos mortos do index.css;P2;M;aberto
+OTTO-0545;11 · Design system e temas;Guia de contribuição de interface;P2;S;aberto
+OTTO-0546;11 · Design system e temas;Revisar todos os tons de cinza usados (quantos são?);P2;S;aberto
+OTTO-0547;11 · Design system e temas;Verificar legibilidade com fonte maior do sistema;P2;S;aberto
+OTTO-0548;11 · Design system e temas;Testes visuais de regressão por tema;P3;L;aberto
+OTTO-0549;11 · Design system e temas;"Definir o que é ""assinatura visual"" do OTTO e proteger";P2;S;aberto
+OTTO-0550;11 · Design system e temas;Publicar a tabela de tokens na ajuda, como referência única;P2;S;aberto
+OTTO-0551;12 · Microinterações e animação;Curvas de aceleração padronizadas para entrada e saída;P1;S;aberto
+OTTO-0552;12 · Microinterações e animação;Durações por tipo de ação (rápida, média, lenta);P1;S;aberto
+OTTO-0553;12 · Microinterações e animação;Respeitar prefers-reduced-motion em todas as animações;P1;M;aberto
+OTTO-0554;12 · Microinterações e animação;Não animar nada durante o streaming de texto;P1;S;aberto
+OTTO-0555;12 · Microinterações e animação;Animar a chegada da resposta só uma vez, sem reanimar o histórico;P1;M;aberto
+OTTO-0556;12 · Microinterações e animação;Pulso real do microfone ligado ao nível de áudio;P1;M;aberto
+OTTO-0557;12 · Microinterações e animação;Nenhuma animação pode bloquear input;P1;S;aberto
+OTTO-0558;12 · Microinterações e animação;Estados desabilitados visivelmente distintos;P1;S;aberto
+OTTO-0559;12 · Microinterações e animação;Auditar 60 fps em aparelho real de entrada;P1;M;aberto
+OTTO-0560;12 · Microinterações e animação;Escalonamento de 40 ms entre itens;P2;S;aberto
+OTTO-0561;12 · Microinterações e animação;Animação de envio de mensagem (sai da bolha);P2;S;aberto
+OTTO-0562;12 · Microinterações e animação;Indicador de digitação com três pontos;P2;S;aberto
+OTTO-0563;12 · Microinterações e animação;Animação do mascote por estado (ouvindo, pensando, falando);P2;M;aberto
+OTTO-0564;12 · Microinterações e animação;Transição suave ao trocar de tema;P2;S;aberto
+OTTO-0565;12 · Microinterações e animação;Feedback de clique com elevação, sem ripple exagerado;P2;S;aberto
+OTTO-0566;12 · Microinterações e animação;Botão de enviar com estado de carregamento embutido;P2;S;aberto
+OTTO-0567;12 · Microinterações e animação;Scroll suave até a mensagem nova;P2;S;aberto
+OTTO-0568;12 · Microinterações e animação;Animação da lista de sugestões ao aparecer;P2;S;aberto
+OTTO-0569;12 · Microinterações e animação;Não animar listas longas de uma vez;P2;S;aberto
+OTTO-0570;12 · Microinterações e animação;Usar will-change com parcimônia e remover depois;P2;S;aberto
+OTTO-0571;12 · Microinterações e animação;Animar só transform e opacity;P2;S;aberto
+OTTO-0572;12 · Microinterações e animação;Cancelar animações pendentes no unmount;P2;S;aberto
+OTTO-0573;12 · Microinterações e animação;Ações comuns terminam em menos de 400 ms;P2;S;aberto
+OTTO-0574;12 · Microinterações e animação;Não usar setTimeout para estado crítico de animação;P2;M;aberto
+OTTO-0575;12 · Microinterações e animação;Teste de que nenhuma animação fica presa em zero de opacidade;P2;M;aberto
+OTTO-0576;12 · Microinterações e animação;Shimmer no skeleton;P2;S;aberto
+OTTO-0577;12 · Microinterações e animação;Cursor e estados de ponteiro consistentes;P2;S;aberto
+OTTO-0578;12 · Microinterações e animação;Toast curto ao copiar;P2;S;aberto
+OTTO-0579;12 · Microinterações e animação;Animação de abertura do painel do Data Hub;P2;S;aberto
+OTTO-0580;12 · Microinterações e animação;Animação do holograma reagindo ao estado do agente;P2;M;aberto
+OTTO-0581;12 · Microinterações e animação;Nenhuma animação infinita em repouso (bateria);P2;S;aberto
+OTTO-0582;12 · Microinterações e animação;Catálogo de animações documentado;P2;S;aberto
+OTTO-0583;12 · Microinterações e animação;Fade discreto das mensagens antigas ao rolar;P3;S;aberto
+OTTO-0584;12 · Microinterações e animação;Transição de modal a partir do elemento que a originou;P3;M;aberto
+OTTO-0585;12 · Microinterações e animação;Animação de erro (tremor) usada com parcimônia;P3;S;aberto
+OTTO-0586;12 · Microinterações e animação;Animação de sucesso (check);P3;S;aberto
+OTTO-0587;12 · Microinterações e animação;Arrastar para baixo fecha o sheet no mobile;P2;L;aberto
+OTTO-0588;12 · Microinterações e animação;Suporte a gesto de swipe para descartar;P2;L;aberto
+OTTO-0589;12 · Microinterações e animação;Animação de contagem de números em métricas;P3;S;aberto
+OTTO-0590;12 · Microinterações e animação;Sincronizar animação CSS e estado JS;P3;S;aberto
+OTTO-0591;12 · Microinterações e animação;Preferir Visibilidade a display para transições;P3;S;aberto
+OTTO-0592;12 · Microinterações e animação;Web Animations API onde a lógica é dinâmica;P3;M;aberto
+OTTO-0593;12 · Microinterações e animação;Controle de velocidade de animação nas Configurações;P3;S;aberto
+OTTO-0594;12 · Microinterações e animação;"Modo ""movimento reduzido"" além do do sistema";P3;S;aberto
+OTTO-0595;12 · Microinterações e animação;Animação de transição entre telas;P3;M;aberto
+OTTO-0596;12 · Microinterações e animação;Pull to refresh só se houver dado remoto;P3;M;aberto
+OTTO-0597;12 · Microinterações e animação;Ripple de toque no mobile;P3;S;aberto
+OTTO-0598;12 · Microinterações e animação;Animar entrada de toasts sem empurrar conteúdo;P2;S;aberto
+OTTO-0599;12 · Microinterações e animação;Revisar todas as animações em modo claro (sombras e brilho);P2;M;aberto
+OTTO-0600;12 · Microinterações e animação;Garantir que nenhuma animação dependa de dados carregando;P2;S;aberto
+OTTO-0601;13 · Acessibilidade;Auditoria automática (axe) em todas as telas, no CI;P1;M;aberto
+OTTO-0602;13 · Acessibilidade;Navegação completa por teclado, sem armadilhas;P1;M;aberto
+OTTO-0603;13 · Acessibilidade;Ordem de foco lógica e foco sempre visível;P1;S;aberto
+OTTO-0604;13 · Acessibilidade;Região aria-live para a resposta, anunciada uma vez;P1;M;aberto
+OTTO-0605;13 · Acessibilidade;Nunca anunciar token por token no leitor de tela;P1;M;aberto
+OTTO-0606;13 · Acessibilidade;Rótulo em todos os campos, mesmo os com placeholder;P1;S;aberto
+OTTO-0607;13 · Acessibilidade;aria-label em todos os botões que só têm ícone;P1;S;aberto
+OTTO-0608;13 · Acessibilidade;Contraste AA no texto e nos ícones interativos;P1;M;aberto
+OTTO-0609;13 · Acessibilidade;Contraste do placeholder acima de 4.5:1;P1;S;aberto
+OTTO-0610;13 · Acessibilidade;Não depender de cor para transmitir estado;P1;S;aberto
+OTTO-0611;13 · Acessibilidade;Contraste garantido sobre superfícies com blur;P1;M;aberto
+OTTO-0612;13 · Acessibilidade;Zoom de 200% sem perda de conteúdo;P1;M;aberto
+OTTO-0613;13 · Acessibilidade;Modais com role dialog, aria-modal e foco preso;P1;S;aberto
+OTTO-0614;13 · Acessibilidade;Devolver o foco ao elemento de origem ao fechar;P1;S;aberto
+OTTO-0615;13 · Acessibilidade;Esc fecha a camada do topo;P1;S;aberto
+OTTO-0616;13 · Acessibilidade;Alvos de toque de no mínimo 44 px;P1;S;aberto
+OTTO-0617;13 · Acessibilidade;Áudio nunca toca sem gesto do usuário;P1;S;aberto
+OTTO-0618;13 · Acessibilidade;Controles de parar e volume acessíveis por teclado;P1;S;aberto
+OTTO-0619;13 · Acessibilidade;Respeitar a preferência de alto contraste do sistema;P1;S;aberto
+OTTO-0620;13 · Acessibilidade;Transcrição visível de tudo que o OTTO fala;P1;M;aberto
+OTTO-0621;13 · Acessibilidade;Corrigir o foco preso no sheet do mobile;P1;S;aberto
+OTTO-0622;13 · Acessibilidade;Teste real com VoiceOver e NVDA;P1;L;aberto
+OTTO-0623;13 · Acessibilidade;Escala de fonte do navegador respeitada (usar rem);P2;M;aberto
+OTTO-0624;13 · Acessibilidade;Skip link para o campo de mensagem;P2;S;aberto
+OTTO-0625;13 · Acessibilidade;Erros anunciados e associados ao campo;P2;S;aberto
+OTTO-0626;13 · Acessibilidade;Mensagens que não desaparecem sozinhas antes de ler;P2;S;aberto
+OTTO-0627;13 · Acessibilidade;Toasts com role status;P2;S;aberto
+OTTO-0628;13 · Acessibilidade;Tabelas com cabeçalho e scope;P2;S;aberto
+OTTO-0629;13 · Acessibilidade;Hierarquia de títulos sem pular níveis;P2;S;aberto
+OTTO-0630;13 · Acessibilidade;Landmarks de main, nav e header;P2;S;aberto
+OTTO-0631;13 · Acessibilidade;Carregamento anunciado ao leitor de tela;P2;S;aberto
+OTTO-0632;13 · Acessibilidade;"Estado ""pensando"" anunciado uma única vez";P2;S;aberto
+OTTO-0633;13 · Acessibilidade;Atalhos de teclado documentados e descobríveis;P2;M;aberto
+OTTO-0634;13 · Acessibilidade;Não capturar atalhos reservados do sistema;P2;S;aberto
+OTTO-0635;13 · Acessibilidade;Foco vai para a mensagem nova depois do envio;P2;S;aberto
+OTTO-0636;13 · Acessibilidade;Lista de mensagens como lista semântica;P2;S;aberto
+OTTO-0637;13 · Acessibilidade;Contraste de elementos desabilitados;P2;S;aberto
+OTTO-0638;13 · Acessibilidade;Anel de foco que não desaparece sobre blur;P2;S;aberto
+OTTO-0639;13 · Acessibilidade;Linguagem simples e frases curtas;P2;M;aberto
+OTTO-0640;13 · Acessibilidade;Não exigir hover para descobrir nada;P2;S;aberto
+OTTO-0641;13 · Acessibilidade;Não exigir gesto complexo;P2;S;aberto
+OTTO-0642;13 · Acessibilidade;Funcionar em retrato e paisagem;P2;S;aberto
+OTTO-0643;13 · Acessibilidade;Testes automatizados de acessibilidade no CI;P2;M;aberto
+OTTO-0644;13 · Acessibilidade;Checklist de acessibilidade no template de PR;P2;S;aberto
+OTTO-0645;13 · Acessibilidade;Documentar os padrões de acessibilidade adotados;P2;S;aberto
+OTTO-0646;13 · Acessibilidade;Suporte a switch control e controle por voz;P3;L;aberto
+OTTO-0647;13 · Acessibilidade;Legendas no áudio sintetizado;P3;M;aberto
+OTTO-0648;13 · Acessibilidade;Teste com usuário real que usa leitor de tela;P3;L;aberto
+OTTO-0649;13 · Acessibilidade;Revisar a11y do Data Hub e dos hologramas;P2;M;aberto
+OTTO-0650;13 · Acessibilidade;Não perder o foco do teclado quando chega mensagem durante o stream;P2;M;aberto
+OTTO-0651;14 · Responsivo, mobile e PWA;Manifest e ícones para instalar como app;P1;M;aberto
+OTTO-0652;14 · Responsivo, mobile e PWA;Service worker com cache dos assets;P2;L;aberto
+OTTO-0653;14 · Responsivo, mobile e PWA;Tela de offline com botão de tentar de novo;P1;S;aberto
+OTTO-0654;14 · Responsivo, mobile e PWA;Respeitar as áreas seguras (notch, home indicator);P1;S;aberto
+OTTO-0655;14 · Responsivo, mobile e PWA;Usar 100dvh em vez de 100vh;P1;S;aberto
+OTTO-0656;14 · Responsivo, mobile e PWA;Teclado virtual não pode cobrir o campo de texto;P1;M;aberto
+OTTO-0657;14 · Responsivo, mobile e PWA;Scroll lock correto quando modal abre;P1;S;aberto
+OTTO-0658;14 · Responsivo, mobile e PWA;Breakpoints definidos: 375, 390, 768, 1024, 1440;P1;M;aberto
+OTTO-0659;14 · Responsivo, mobile e PWA;Layout de chat mobile com campo fixo no rodapé;P1;M;aberto
+OTTO-0660;14 · Responsivo, mobile e PWA;Cabeçalho compacto no mobile sem perder ações;P1;S;aberto
+OTTO-0661;14 · Responsivo, mobile e PWA;Reduzir partículas e blur no mobile;P1;S;aberto
+OTTO-0662;14 · Responsivo, mobile e PWA;Enter envia e Shift+Enter quebra linha no desktop;P1;S;aberto
+OTTO-0663;14 · Responsivo, mobile e PWA;No mobile, Enter quebra linha (não envia);P1;S;aberto
+OTTO-0664;14 · Responsivo, mobile e PWA;Links externos em nova aba;P1;S;aberto
+OTTO-0665;14 · Responsivo, mobile e PWA;Pausar animações para economizar bateria;P2;S;aberto
+OTTO-0666;14 · Responsivo, mobile e PWA;Detectar aparelho modesto e baixar a qualidade visual;P2;M;aberto
+OTTO-0667;14 · Responsivo, mobile e PWA;Desktop com largura máxima de leitura confortável;P2;S;aberto
+OTTO-0668;14 · Responsivo, mobile e PWA;Atalhos de teclado no desktop, com dica visual;P2;M;aberto
+OTTO-0669;14 · Responsivo, mobile e PWA;Não perder estado ao girar a tela;P2;S;aberto
+OTTO-0670;14 · Responsivo, mobile e PWA;Bottom sheet nativo no mobile;P2;M;aberto
+OTTO-0671;14 · Responsivo, mobile e PWA;Campo de texto que cresce com o conteúdo;P2;S;aberto
+OTTO-0672;14 · Responsivo, mobile e PWA;Colar imagem do clipboard;P2;M;aberto
+OTTO-0673;14 · Responsivo, mobile e PWA;Upload de arquivo pelo celular;P2;M;aberto
+OTTO-0674;14 · Responsivo, mobile e PWA;Comportamento correto do botão voltar;P2;M;aberto
+OTTO-0675;14 · Responsivo, mobile e PWA;Zoom desabilitado apenas onde realmente atrapalha;P2;S;aberto
+OTTO-0676;14 · Responsivo, mobile e PWA;Autofocus que não abre teclado indesejado;P2;S;aberto
+OTTO-0677;14 · Responsivo, mobile e PWA;Testar em Android antigo e em iPhone pequeno;P2;L;aberto
+OTTO-0678;14 · Responsivo, mobile e PWA;Suporte a tablet em paisagem;P2;M;aberto
+OTTO-0679;14 · Responsivo, mobile e PWA;Desempenho aceitável em 3G;P2;M;aberto
+OTTO-0680;14 · Responsivo, mobile e PWA;Primeiro carregamento abaixo de 3 s em 4G;P2;M;aberto
+OTTO-0681;14 · Responsivo, mobile e PWA;Orçamento de JS para mobile explícito;P2;M;aberto
+OTTO-0682;14 · Responsivo, mobile e PWA;Fontes sem download bloqueante;P2;S;aberto
+OTTO-0683;14 · Responsivo, mobile e PWA;Indicador de conexão instável;P2;S;aberto
+OTTO-0684;14 · Responsivo, mobile e PWA;Teste Lighthouse mobile no CI;P2;M;aberto
+OTTO-0685;14 · Responsivo, mobile e PWA;Compartilhar pelo menu nativo (Web Share);P3;S;aberto
+OTTO-0686;14 · Responsivo, mobile e PWA;"Prompt discreto de ""adicionar à tela inicial""";P3;S;aberto
+OTTO-0687;14 · Responsivo, mobile e PWA;Cor da barra de status conforme o tema;P3;S;aberto
+OTTO-0688;14 · Responsivo, mobile e PWA;Ícone adaptativo no Android;P3;S;aberto
+OTTO-0689;14 · Responsivo, mobile e PWA;Splash screen própria;P3;S;aberto
+OTTO-0690;14 · Responsivo, mobile e PWA;Deep links para abrir direto no Data Hub;P3;M;aberto
+OTTO-0691;14 · Responsivo, mobile e PWA;Sincronizar ao voltar a ficar online;P2;L;aberto
+OTTO-0692;14 · Responsivo, mobile e PWA;Cache offline do histórico recente;P3;L;aberto
+OTTO-0693;14 · Responsivo, mobile e PWA;Vibração nos eventos principais;P3;S;aberto
+OTTO-0694;14 · Responsivo, mobile e PWA;Captura de foto pela câmera;P3;M;aberto
+OTTO-0695;14 · Responsivo, mobile e PWA;Modo economia de dados;P3;M;aberto
+OTTO-0696;14 · Responsivo, mobile e PWA;Notificações push para plano concluído;P3;L;aberto
+OTTO-0697;14 · Responsivo, mobile e PWA;Matriz de dispositivos testados, documentada;P2;L;aberto
+OTTO-0698;14 · Responsivo, mobile e PWA;Instruções de instalação por plataforma;P3;S;aberto
+OTTO-0699;14 · Responsivo, mobile e PWA;Tema escuro como padrão no celular à noite;P3;S;aberto
+OTTO-0700;14 · Responsivo, mobile e PWA;Desligar autocomplete e autocorrect onde atrapalham;P3;S;aberto
+OTTO-0701;15 · Performance e bundle;Re-render global evitado: separar contextos de tema, settings e chat;P1;M;aberto
+OTTO-0702;15 · Performance e bundle;React.memo nas bolhas e nos itens de lista;P1;S;aberto
+OTTO-0703;15 · Performance e bundle;Throttle do autoscroll por frame;P1;S;aberto
+OTTO-0704;15 · Performance e bundle;AbortController em todas as chamadas de rede;P1;S;aberto
+OTTO-0705;15 · Performance e bundle;Limitar o payload de histórico por requisição;P1;S;aberto
+OTTO-0706;15 · Performance e bundle;Code splitting por modal e por view;P1;M;aberto
+OTTO-0707;15 · Performance e bundle;Verificar tree shaking do pacote de ícones;P2;M;aberto
+OTTO-0708;15 · Performance e bundle;Code splitting aplicado também às rotas de API pesadas;P2;M;aberto
+OTTO-0709;15 · Performance e bundle;Análise de composição do bundle, gerada no CI;P2;S;aberto
+OTTO-0710;15 · Performance e bundle;Orçamento de bundle explícito, com quebra do build ao estourar;P2;M;aberto
+OTTO-0711;15 · Performance e bundle;Remover dependências não utilizadas;P2;S;aberto
+OTTO-0712;15 · Performance e bundle;Cache imutável de assets com hash;P2;S;aberto
+OTTO-0713;15 · Performance e bundle;Preload das fontes críticas;P2;S;aberto
+OTTO-0714;15 · Performance e bundle;Prefetch de chunks guiado pela intenção detectada;P2;M;aberto
+OTTO-0715;15 · Performance e bundle;Preconnect para as APIs externas;P2;S;aberto
+OTTO-0716;15 · Performance e bundle;Compressão brotli nas respostas estáticas;P2;S;aberto
+OTTO-0717;15 · Performance e bundle;Revisar o custo do CSS gerado pelo Tailwind;P2;S;aberto
+OTTO-0718;15 · Performance e bundle;useMemo e useCallback apenas nos pontos medidos;P2;M;aberto
+OTTO-0719;15 · Performance e bundle;Evitar objetos e funções inline em props de listas;P2;S;aberto
+OTTO-0720;15 · Performance e bundle;Debounce em resize e scroll;P2;S;aberto
+OTTO-0721;15 · Performance e bundle;Virtualizar a lista de mensagens e a tabela do Data Hub;P2;L;aberto
+OTTO-0722;15 · Performance e bundle;Web Worker para parse de CSV;P2;M;aberto
+OTTO-0723;15 · Performance e bundle;Web Worker para análise de áudio;P3;M;aberto
+OTTO-0724;15 · Performance e bundle;Lazy load dos hologramas;P2;S;aberto
+OTTO-0725;15 · Performance e bundle;Substituir animações que forçam layout;P2;M;aberto
+OTTO-0726;15 · Performance e bundle;Remover imagens embutidas em base64;P2;M;aberto
+OTTO-0727;15 · Performance e bundle;Converter imagens para WebP e AVIF;P2;M;aberto
+OTTO-0728;15 · Performance e bundle;srcset responsivo nas imagens;P2;S;aberto
+OTTO-0729;15 · Performance e bundle;Carregamento tardio de imagens;P2;S;aberto
+OTTO-0730;15 · Performance e bundle;Dimensões explícitas para evitar deslocamento;P2;S;aberto
+OTTO-0731;15 · Performance e bundle;Cache no proxy de imagens;P2;M;aberto
+OTTO-0732;15 · Performance e bundle;Paginar mensagens antigas em vez de carregar tudo;P2;M;aberto
+OTTO-0733;15 · Performance e bundle;Limpar estado que não é mais usado;P2;M;aberto
+OTTO-0734;15 · Performance e bundle;Fechar AudioContext ao trocar de motor;P2;S;aberto
+OTTO-0735;15 · Performance e bundle;Remover listeners no unmount, sempre;P2;S;aberto
+OTTO-0736;15 · Performance e bundle;Revogar object URLs depois de usar;P2;S;aberto
+OTTO-0737;15 · Performance e bundle;Guardar dados grandes em IndexedDB, não em localStorage;P2;M;aberto
+OTTO-0738;15 · Performance e bundle;Debounce na persistência do histórico;P2;S;aberto
+OTTO-0739;15 · Performance e bundle;Medir INP, não só FCP;P2;M;aberto
+OTTO-0740;15 · Performance e bundle;Metas de Web Vitals definidas e acompanhadas;P2;M;aberto
+OTTO-0741;15 · Performance e bundle;Lighthouse CI com limite mínimo;P2;L;aberto
+OTTO-0742;15 · Performance e bundle;Perfil de memória em sessão longa, buscando vazamento;P2;L;aberto
+OTTO-0743;15 · Performance e bundle;Evitar JSON.parse grande na thread principal;P3;M;aberto
+OTTO-0744;15 · Performance e bundle;CSS crítico inline no HTML inicial;P3;M;aberto
+OTTO-0745;15 · Performance e bundle;HTTP/2 ou HTTP/3 no servidor de produção;P3;S;aberto
+OTTO-0746;15 · Performance e bundle;Preload da imagem principal;P3;S;aberto
+OTTO-0747;15 · Performance e bundle;Compressão de imagens no upload;P2;M;aberto
+OTTO-0748;15 · Performance e bundle;Reduzir o custo do primeiro paint;P2;M;aberto
+OTTO-0749;15 · Performance e bundle;Dashboard de performance por release;P3;M;aberto
+OTTO-0750;15 · Performance e bundle;Perfilar o primeiro render com React Profiler e registrar no CI;P2;M;aberto
+OTTO-0751;16 · Segurança e privacidade;Token de acesso obrigatório em produção, validado em toda rota;P0;M;aberto
+OTTO-0752;16 · Segurança e privacidade;Sanitizar HTML de markdown para eliminar XSS;P0;M;aberto
+OTTO-0753;16 · Segurança e privacidade;Path traversal coberto em todos os endpoints de arquivo;P0;M;aberto
+OTTO-0754;16 · Segurança e privacidade;Bloquear IPs privados e metadados de nuvem no proxy;P0;M;aberto
+OTTO-0755;16 · Segurança e privacidade;CORS restritivo, sem curinga em produção;P0;S;aberto
+OTTO-0756;16 · Segurança e privacidade;Cabeçalhos de segurança: CSP, HSTS, X-Frame-Options, nosniff;P0;M;aberto
+OTTO-0757;16 · Segurança e privacidade;Rate limit por IP nas rotas caras;P0;M;aberto
+OTTO-0758;16 · Segurança e privacidade;Nenhum segredo no bundle do frontend;P0;M;aberto
+OTTO-0759;16 · Segurança e privacidade;Execução de comando apenas com aprovação explícita;P0;M;aberto
+OTTO-0760;16 · Segurança e privacidade;Arquivos servidos somente dentro do diretório permitido;P0;M;aberto
+OTTO-0761;16 · Segurança e privacidade;SSRF no proxy de imagem e na leitura de páginas;P0;L;aberto
+OTTO-0762;16 · Segurança e privacidade;Rate limit por usuário e por chave;P1;M;aberto
+OTTO-0763;16 · Segurança e privacidade;CSP sem unsafe-inline, com nonce;P1;L;aberto
+OTTO-0764;16 · Segurança e privacidade;Limite de tamanho de corpo em todas as rotas;P1;S;aberto
+OTTO-0765;16 · Segurança e privacidade;Validação de content-type e de magic bytes nos uploads;P1;M;aberto
+OTTO-0766;16 · Segurança e privacidade;Limite de redirecionamentos nos proxies;P1;S;aberto
+OTTO-0767;16 · Segurança e privacidade;Timeout em toda requisição de saída;P1;S;aberto
+OTTO-0768;16 · Segurança e privacidade;Mover a chave de API do localStorage para o servidor;P1;L;aberto
+OTTO-0769;16 · Segurança e privacidade;Mascarar a chave na interface depois de salva;P1;S;aberto
+OTTO-0770;16 · Segurança e privacidade;Sanitizar nomes de arquivo recebidos;P1;S;aberto
+OTTO-0771;16 · Segurança e privacidade;Logs sem dados pessoais;P1;M;aberto
+OTTO-0772;16 · Segurança e privacidade;Não registrar o conteúdo das mensagens por padrão;P1;S;aberto
+OTTO-0773;16 · Segurança e privacidade;Redigir chaves e tokens nas mensagens de erro;P1;S;aberto
+OTTO-0774;16 · Segurança e privacidade;Aviso claro de que a conversa vai para provedores terceiros;P1;S;aberto
+OTTO-0775;16 · Segurança e privacidade;Consentimento para gravação de áudio;P1;S;aberto
+OTTO-0776;16 · Segurança e privacidade;LGPD: direito de excluir histórico e memória;P1;M;aberto
+OTTO-0777;16 · Segurança e privacidade;LGPD: política de privacidade publicada;P1;M;aberto
+OTTO-0778;16 · Segurança e privacidade;Detecção de prompt injection em conteúdo externo;P1;L;aberto
+OTTO-0779;16 · Segurança e privacidade;Sandbox sem rede por padrão;P1;M;aberto
+OTTO-0780;16 · Segurança e privacidade;Sandbox sem privilégios de root;P1;M;aberto
+OTTO-0781;16 · Segurança e privacidade;npm audit no CI, com bloqueio em severidade alta;P1;M;aberto
+OTTO-0782;16 · Segurança e privacidade;Testes de segurança automatizados para as rotas;P1;L;aberto
+OTTO-0783;16 · Segurança e privacidade;Criptografia da chave em repouso;P2;L;aberto
+OTTO-0784;16 · Segurança e privacidade;Rotação do token de sessão;P2;M;aberto
+OTTO-0785;16 · Segurança e privacidade;Expiração de sessão inativa;P2;M;aberto
+OTTO-0786;16 · Segurança e privacidade;Auditoria de acesso a dados sensíveis;P2;M;aberto
+OTTO-0787;16 · Segurança e privacidade;Allowlist de comandos permitidos no sandbox;P2;M;aberto
+OTTO-0788;16 · Segurança e privacidade;`noindex` e proteção contra indexação do app privado;P2;S;aberto
+OTTO-0789;16 · Segurança e privacidade;Nunca passar chave ou token pela URL, sempre por cabeçalho;P1;S;aberto
+OTTO-0790;16 · Segurança e privacidade;Revisar permissões de integrações de terceiros;P2;M;aberto
+OTTO-0791;16 · Segurança e privacidade;Lockfile commitado e instalação determinística;P2;S;aberto
+OTTO-0792;16 · Segurança e privacidade;Logout em todos os dispositivos;P3;M;aberto
+OTTO-0793;16 · Segurança e privacidade;Backup criptografado;P3;M;aberto
+OTTO-0794;16 · Segurança e privacidade;Subresource Integrity nos scripts externos;P3;S;aberto
+OTTO-0795;16 · Segurança e privacidade;Sessão única versus múltipla, com escolha;P3;S;aberto
+OTTO-0796;16 · Segurança e privacidade;Autenticação em dois fatores, se houver contas;P3;L;aberto
+OTTO-0797;16 · Segurança e privacidade;Provedor de IA local como opção de privacidade;P3;L;aberto
+OTTO-0798;16 · Segurança e privacidade;Checklist OWASP revisado antes do lançamento;P2;L;aberto
+OTTO-0799;16 · Segurança e privacidade;Teste de penetração leve com terceiro;P3;L;aberto
+OTTO-0800;16 · Segurança e privacidade;Definir prazo de retenção de logs e áudios na política;P2;S;aberto
+OTTO-0801;17 · Backend, API e infra;Healthcheck em /healthz com estado das dependências;P1;S;aberto
+OTTO-0802;17 · Backend, API e infra;Encerramento gracioso (drenar conexões antes de sair);P1;S;aberto
+OTTO-0803;17 · Backend, API e infra;Logs estruturados em JSON;P1;M;aberto
+OTTO-0804;17 · Backend, API e infra;Request ID propagado do cliente ao provedor;P1;S;aberto
+OTTO-0805;17 · Backend, API e infra;Tratador de erro central, sem vazar stack para o cliente;P1;M;aberto
+OTTO-0806;17 · Backend, API e infra;Validação de entrada com schema em todas as rotas;P1;M;aberto
+OTTO-0807;17 · Backend, API e infra;Timeouts centralizados e configuráveis;P1;S;aberto
+OTTO-0808;17 · Backend, API e infra;Limite de concorrência por provedor;P1;M;aberto
+OTTO-0809;17 · Backend, API e infra;Pool de conexões HTTP reutilizado;P1;M;aberto
+OTTO-0810;17 · Backend, API e infra;Configuração tipada, validada no boot;P1;M;aberto
+OTTO-0811;17 · Backend, API e infra;Falhar rápido quando falta variável obrigatória;P1;S;aberto
+OTTO-0812;17 · Backend, API e infra;Limite de payload no corpo das requisições;P1;S;aberto
+OTTO-0813;17 · Backend, API e infra;Streaming de arquivos sem carregar tudo em memória;P1;M;aberto
+OTTO-0814;17 · Backend, API e infra;Limpeza de arquivos temporários por rotina;P1;M;aberto
+OTTO-0815;17 · Backend, API e infra;Persistir planos e memória em disco, não só em memória;P1;L;aberto
+OTTO-0816;17 · Backend, API e infra;Padrão de erro com código, mensagem e próximo passo;P1;M;aberto
+OTTO-0817;17 · Backend, API e infra;HTTPS com redirecionamento;P1;M;aberto
+OTTO-0818;17 · Backend, API e infra;Testes de integração contra o servidor real;P1;L;aberto
+OTTO-0819;17 · Backend, API e infra;CI com install, typecheck, teste e build;P1;M;aberto
+OTTO-0820;17 · Backend, API e infra;Versionar a API (/api/v1);P2;M;aberto
+OTTO-0821;17 · Backend, API e infra;Documentar as rotas em OpenAPI;P2;M;aberto
+OTTO-0822;17 · Backend, API e infra;Fila para tarefas longas, com progresso;P2;L;aberto
+OTTO-0823;17 · Backend, API e infra;Idempotency key nos retries;P2;M;aberto
+OTTO-0824;17 · Backend, API e infra;Cache de respostas GET estáveis (vozes, config);P2;S;aberto
+OTTO-0825;17 · Backend, API e infra;Compressão das respostas;P2;S;aberto
+OTTO-0826;17 · Backend, API e infra;Separar configuração de dev e produção;P2;S;aberto
+OTTO-0827;17 · Backend, API e infra;Dockerfile reproduzível;P2;M;aberto
+OTTO-0828;17 · Backend, API e infra;Cache de dependências no CI;P2;S;aberto
+OTTO-0829;17 · Backend, API e infra;Migrações de dados versionadas;P2;M;aberto
+OTTO-0830;17 · Backend, API e infra;Backup periódico do diretório de dados;P2;M;aberto
+OTTO-0831;17 · Backend, API e infra;Retenção e rotação de logs;P2;S;aberto
+OTTO-0832;17 · Backend, API e infra;Alertas de taxa de erro;P2;M;aberto
+OTTO-0833;17 · Backend, API e infra;Trust proxy configurado corretamente;P2;S;aberto
+OTTO-0834;17 · Backend, API e infra;Cron de manutenção (limpeza, backup);P2;M;aberto
+OTTO-0835;17 · Backend, API e infra;Testes de contrato das rotas;P2;M;aberto
+OTTO-0836;17 · Backend, API e infra;Teste de carga básico no stream;P2;M;aberto
+OTTO-0837;17 · Backend, API e infra;Documentar estrutura de pastas;P2;S;aberto
+OTTO-0838;17 · Backend, API e infra;Documentar deploy (env, portas, volumes);P2;M;aberto
+OTTO-0839;17 · Backend, API e infra;Migrar de arquivos JSON para SQLite;P2;L;aberto
+OTTO-0840;17 · Backend, API e infra;Migrar de um processo para dois (API e estático) quando crescer;P3;L;aberto
+OTTO-0841;17 · Backend, API e infra;Server-Sent Events como alternativa ao stream;P3;L;aberto
+OTTO-0842;17 · Backend, API e infra;WebSocket para status de plano em tempo real;P3;M;aberto
+OTTO-0843;17 · Backend, API e infra;ETag nas respostas estáveis;P3;S;aberto
+OTTO-0844;17 · Backend, API e infra;Métricas no formato Prometheus;P3;M;aberto
+OTTO-0845;17 · Backend, API e infra;Tracing distribuído das requisições;P3;L;aberto
+OTTO-0846;17 · Backend, API e infra;docker-compose para desenvolvimento;P3;M;aberto
+OTTO-0847;17 · Backend, API e infra;Deploy automatizado;P2;L;aberto
+OTTO-0848;17 · Backend, API e infra;Monitor de uptime externo;P3;S;aberto
+OTTO-0849;17 · Backend, API e infra;Revisar uso de memória do processo em sessão longa;P2;L;aberto
+OTTO-0850;17 · Backend, API e infra;Documentar limites e cotas de cada provedor;P2;S;aberto
+OTTO-0851;18 · Observabilidade, testes e CI;Teste de path traversal como regressão obrigatória;P0;S;aberto
+OTTO-0852;18 · Observabilidade, testes e CI;Mocks determinísticos para os provedores de IA;P1;M;aberto
+OTTO-0853;18 · Observabilidade, testes e CI;Testes do roteador de tarefas;P1;M;aberto
+OTTO-0854;18 · Observabilidade, testes e CI;Testes do armazenamento de memória;P1;M;aberto
+OTTO-0855;18 · Observabilidade, testes e CI;Testes do executor de ferramentas;P1;M;aberto
+OTTO-0856;18 · Observabilidade, testes e CI;Testes do fallback do motor de voz;P1;M;aberto
+OTTO-0857;18 · Observabilidade, testes e CI;Testes do orquestrador do agente;P1;L;aberto
+OTTO-0858;18 · Observabilidade, testes e CI;Testes de componente com Testing Library;P1;L;aberto
+OTTO-0859;18 · Observabilidade, testes e CI;Teste E2E do fluxo principal (falar, responder, agir);P1;L;aberto
+OTTO-0860;18 · Observabilidade, testes e CI;Cobertura mínima definida e verificada;P1;M;aberto
+OTTO-0861;18 · Observabilidade, testes e CI;Teste de rate limit;P1;M;aberto
+OTTO-0862;18 · Observabilidade, testes e CI;Teste de CORS;P1;S;aberto
+OTTO-0863;18 · Observabilidade, testes e CI;Testes de segurança automatizados;P1;L;aberto
+OTTO-0864;18 · Observabilidade, testes e CI;Rastreamento de erros (Sentry ou equivalente);P1;M;aberto
+OTTO-0865;18 · Observabilidade, testes e CI;Cobertura reportada por área, não só total;P2;S;aberto
+OTTO-0866;18 · Observabilidade, testes e CI;Testes de streaming e cancelamento;P2;M;aberto
+OTTO-0867;18 · Observabilidade, testes e CI;Testes de falha de rede e timeout;P2;S;aberto
+OTTO-0868;18 · Observabilidade, testes e CI;Testes de acessibilidade no CI;P2;M;aberto
+OTTO-0869;18 · Observabilidade, testes e CI;Testes de upload e validação de arquivo;P2;M;aberto
+OTTO-0870;18 · Observabilidade, testes e CI;Fixtures de áudio para STT;P2;M;aberto
+OTTO-0871;18 · Observabilidade, testes e CI;Testes do armazenamento do Data Hub;P2;M;aberto
+OTTO-0872;18 · Observabilidade, testes e CI;Testes do motor de voz (parcial);P2;L;aberto
+OTTO-0873;18 · Observabilidade, testes e CI;Testes do avaliador matemático ampliados;P2;S;aberto
+OTTO-0874;18 · Observabilidade, testes e CI;Nenhum teste instável: quarentena explícita;P2;M;aberto
+OTTO-0875;18 · Observabilidade, testes e CI;Suíte completa em menos de 30 s;P2;S;aberto
+OTTO-0876;18 · Observabilidade, testes e CI;Factories de dados de teste;P2;S;aberto
+OTTO-0877;18 · Observabilidade, testes e CI;Logs do cliente enviados ao servidor;P2;M;aberto
+OTTO-0878;18 · Observabilidade, testes e CI;Build ID visível nas issues e nos relatórios;P2;S;aberto
+OTTO-0879;18 · Observabilidade, testes e CI;Painel de saúde do sistema na UI;P2;M;aberto
+OTTO-0880;18 · Observabilidade, testes e CI;Métricas de uso por recurso;P2;M;aberto
+OTTO-0881;18 · Observabilidade, testes e CI;Alertas de latência p95;P2;M;aberto
+OTTO-0882;18 · Observabilidade, testes e CI;Painel de custo por provedor;P2;M;aberto
+OTTO-0883;18 · Observabilidade, testes e CI;Feature flags;P2;L;aberto
+OTTO-0884;18 · Observabilidade, testes e CI;CHANGELOG gerado automaticamente;P2;M;aberto
+OTTO-0885;18 · Observabilidade, testes e CI;Versionamento semântico aplicado;P2;S;aberto
+OTTO-0886;18 · Observabilidade, testes e CI;Pre-commit com lint e typecheck;P2;S;aberto
+OTTO-0887;18 · Observabilidade, testes e CI;Dependabot ou Renovate ativo;P2;S;aberto
+OTTO-0888;18 · Observabilidade, testes e CI;Runbook de incidentes;P2;S;aberto
+OTTO-0889;18 · Observabilidade, testes e CI;Template de issue para bug e feature;P2;S;aberto
+OTTO-0890;18 · Observabilidade, testes e CI;Template de PR com checklist de pronto;P2;S;aberto
+OTTO-0891;18 · Observabilidade, testes e CI;Documentação de arquitetura (C4);P2;M;aberto
+OTTO-0892;18 · Observabilidade, testes e CI;Funil: abriu, falou, recebeu resposta, agiu;P3;M;aberto
+OTTO-0893;18 · Observabilidade, testes e CI;Framework de experimentos A/B;P3;L;aberto
+OTTO-0894;18 · Observabilidade, testes e CI;Degradação graciosa controlada por flag;P3;M;aberto
+OTTO-0895;18 · Observabilidade, testes e CI;Postmortem sem culpa, documentado;P3;S;aberto
+OTTO-0896;18 · Observabilidade, testes e CI;Watch mode com feedback rápido;P3;S;aberto
+OTTO-0897;18 · Observabilidade, testes e CI;Convenção de commits;P3;S;aberto
+OTTO-0898;18 · Observabilidade, testes e CI;Snapshot visual por tema;P3;L;aberto
+OTTO-0899;18 · Observabilidade, testes e CI;Regressão visual automatizada;P3;L;aberto
+OTTO-0900;18 · Observabilidade, testes e CI;Publicar relatório de cobertura a cada release;P3;S;aberto
+OTTO-0901;19 · Integrações externas;Leitura de PDF com extração de texto e tabelas;P1;M;aberto
+OTTO-0902;19 · Integrações externas;Melhorar a leitura de artigo já existente (limpeza e citação);P1;M;aberto
+OTTO-0903;19 · Integrações externas;Escopos mínimos em todas as conexões;P1;M;aberto
+OTTO-0904;19 · Integrações externas;Ações de escrita sempre com confirmação;P1;M;aberto
+OTTO-0905;19 · Integrações externas;Mensagem de erro de integração com dica de reconexão;P1;S;aberto
+OTTO-0906;19 · Integrações externas;Privacidade explícita: o que sai do dispositivo e para onde;P1;M;aberto
+OTTO-0907;19 · Integrações externas;Google Calendar: ler a agenda do dia;P2;L;aberto
+OTTO-0908;19 · Integrações externas;Google Calendar: criar evento por comando de voz;P2;L;aberto
+OTTO-0909;19 · Integrações externas;Gmail: resumir não lidos;P3;L;aberto
+OTTO-0910;19 · Integrações externas;Google Drive: buscar e abrir arquivo;P2;L;aberto
+OTTO-0911;19 · Integrações externas;Notion: ler e criar página;P2;L;aberto
+OTTO-0912;19 · Integrações externas;GitHub: listar issues e PRs;P2;L;aberto
+OTTO-0913;19 · Integrações externas;YouTube: melhorar busca e resumo de vídeo;P2;M;aberto
+OTTO-0914;19 · Integrações externas;OCR de imagem para texto pesquisável;P2;M;aberto
+OTTO-0915;19 · Integrações externas;Captura de tela com análise;P2;M;aberto
+OTTO-0916;19 · Integrações externas;Clipboard do sistema como fonte;P2;M;aberto
+OTTO-0917;19 · Integrações externas;Tradução de trechos sob demanda;P2;M;aberto
+OTTO-0918;19 · Integrações externas;Slack: enviar mensagem;P3;L;aberto
+OTTO-0919;19 · Integrações externas;WhatsApp: abrir conversa com texto pronto;P3;L;aberto
+OTTO-0920;19 · Integrações externas;Spotify: controlar reprodução;P3;M;aberto
+OTTO-0921;19 · Integrações externas;Clima do dia;P3;S;aberto
+OTTO-0922;19 · Integrações externas;Notícias por tema;P3;M;aberto
+OTTO-0923;19 · Integrações externas;Mapas e rotas;P3;L;aberto
+OTTO-0924;19 · Integrações externas;Calendário local em .ics;P3;M;aberto
+OTTO-0925;19 · Integrações externas;Contatos;P3;M;aberto
+OTTO-0926;19 · Integrações externas;E-mail via SMTP;P3;L;aberto
+OTTO-0927;19 · Integrações externas;Webhooks de entrada;P3;L;aberto
+OTTO-0928;19 · Integrações externas;OAuth para todas as integrações;P2;L;aberto
+OTTO-0929;19 · Integrações externas;Tela de conexões com estado e última sincronização;P2;M;aberto
+OTTO-0930;19 · Integrações externas;Revogar acesso de uma conexão;P2;S;aberto
+OTTO-0931;19 · Integrações externas;Rate limit por integração;P2;S;aberto
+OTTO-0932;19 · Integrações externas;Health check de integração;P2;M;aberto
+OTTO-0933;19 · Integrações externas;Cache de respostas por integração;P2;M;aberto
+OTTO-0934;19 · Integrações externas;Templates de prompt por integração;P2;M;aberto
+OTTO-0935;19 · Integrações externas;Log de ações externas executadas;P2;M;aberto
+OTTO-0936;19 · Integrações externas;Testes com mock de cada API;P2;M;aberto
+OTTO-0937;19 · Integrações externas;Documentação por integração;P2;S;aberto
+OTTO-0938;19 · Integrações externas;Limite de dados puxados por chamada;P2;S;aberto
+OTTO-0939;19 · Integrações externas;Fallback quando a integração cai;P2;M;aberto
+OTTO-0940;19 · Integrações externas;Comandos de voz por integração;P2;M;aberto
+OTTO-0941;19 · Integrações externas;Descoberta de integrações na interface;P2;M;aberto
+OTTO-0942;19 · Integrações externas;Escolher provedor por integração;P3;M;aberto
+OTTO-0943;19 · Integrações externas;"Sugestão contextual (""vi que você tem reunião às 15h"")";P3;L;aberto
+OTTO-0944;19 · Integrações externas;Ambiente de teste de integração;P3;L;aberto
+OTTO-0945;19 · Integrações externas;Métricas de uso por integração;P3;S;aberto
+OTTO-0946;19 · Integrações externas;Roadmap público de integrações;P3;S;aberto
+OTTO-0947;19 · Integrações externas;API pública com chaves;P3;L;aberto
+OTTO-0948;19 · Integrações externas;Suporte a MCP ou plugins;P3;L;aberto
+OTTO-0949;19 · Integrações externas;Extensão de VS Code;P3;L;aberto
+OTTO-0950;19 · Integrações externas;Refinar o controle do terminal do sistema;P1;M;aberto
+OTTO-0951;20 · Onboarding, docs e produto;Consentimento e link de privacidade no primeiro uso;P1;S;aberto
+OTTO-0952;20 · Onboarding, docs e produto;Mensagens de erro escritas para humanos, com próximo passo;P1;M;aberto
+OTTO-0953;20 · Onboarding, docs e produto;Onboarding de três passos, com opção de pular;P1;M;aberto
+OTTO-0954;20 · Onboarding, docs e produto;Explicar a diferença entre falar e digitar;P1;S;aberto
+OTTO-0955;20 · Onboarding, docs e produto;Configuração guiada da chave de API;P1;M;aberto
+OTTO-0956;20 · Onboarding, docs e produto;"Exercício ""fale algo"" durante o onboarding";P1;M;aberto
+OTTO-0957;20 · Onboarding, docs e produto;README com capturas e caso de uso real;P1;S;aberto
+OTTO-0958;20 · Onboarding, docs e produto;Templates de primeira tarefa;P2;M;aberto
+OTTO-0959;20 · Onboarding, docs e produto;Tour dos quatro recursos principais;P2;M;aberto
+OTTO-0960;20 · Onboarding, docs e produto;"Ajuda contextual com ""?"" em cada área";P2;M;aberto
+OTTO-0961;20 · Onboarding, docs e produto;Central de ajuda com busca;P2;M;aberto
+OTTO-0962;20 · Onboarding, docs e produto;Documentação de arquitetura;P2;M;aberto
+OTTO-0963;20 · Onboarding, docs e produto;Guia de contribuição;P2;S;aberto
+OTTO-0964;20 · Onboarding, docs e produto;ADRs publicados no repositório;P2;M;aberto
+OTTO-0965;20 · Onboarding, docs e produto;Changelog público;P2;M;aberto
+OTTO-0966;20 · Onboarding, docs e produto;Feedback dentro do app;P2;S;aberto
+OTTO-0967;20 · Onboarding, docs e produto;Definição explícita do que é ativação;P2;S;aberto
+OTTO-0968;20 · Onboarding, docs e produto;Custo médio por usuário medido;P2;M;aberto
+OTTO-0969;20 · Onboarding, docs e produto;Termos de uso;P2;S;aberto
+OTTO-0970;20 · Onboarding, docs e produto;Canal de suporte visível;P2;S;aberto
+OTTO-0971;20 · Onboarding, docs e produto;FAQ com as 20 dúvidas reais;P2;M;aberto
+OTTO-0972;20 · Onboarding, docs e produto;Voz e tom do produto documentados;P2;S;aberto
+OTTO-0973;20 · Onboarding, docs e produto;Nome e identidade consistentes em todo lugar;P2;S;aberto
+OTTO-0974;20 · Onboarding, docs e produto;"Tela ""sobre"" com versão e build";P2;S;aberto
+OTTO-0975;20 · Onboarding, docs e produto;Modo demonstração público, sem chave;P2;M;aberto
+OTTO-0976;20 · Onboarding, docs e produto;Telemetria opt-in, explicada em uma frase;P2;M;aberto
+OTTO-0977;20 · Onboarding, docs e produto;Exportar todos os meus dados;P2;M;aberto
+OTTO-0978;20 · Onboarding, docs e produto;Excluir minha conta e meus dados;P2;M;aberto
+OTTO-0979;20 · Onboarding, docs e produto;Acessibilidade declarada na ajuda;P2;S;aberto
+OTTO-0980;20 · Onboarding, docs e produto;Analytics de funil implementado;P2;M;aberto
+OTTO-0981;20 · Onboarding, docs e produto;Página de status;P3;S;aberto
+OTTO-0982;20 · Onboarding, docs e produto;Roadmap público;P3;S;aberto
+OTTO-0983;20 · Onboarding, docs e produto;NPS com uma pergunta;P3;S;aberto
+OTTO-0984;20 · Onboarding, docs e produto;Métricas de retenção semanal;P3;M;aberto
+OTTO-0985;20 · Onboarding, docs e produto;Vídeos curtos de 30 s por recurso;P3;L;aberto
+OTTO-0986;20 · Onboarding, docs e produto;Planos de preço;P3;L;aberto
+OTTO-0987;20 · Onboarding, docs e produto;Limites por plano aplicados no servidor;P3;M;aberto
+OTTO-0988;20 · Onboarding, docs e produto;Período de teste;P3;M;aberto
+OTTO-0989;20 · Onboarding, docs e produto;Paywall que não bloqueia o núcleo;P3;M;aberto
+OTTO-0990;20 · Onboarding, docs e produto;Landing page com demonstração real;P3;L;aberto
+OTTO-0991;20 · Onboarding, docs e produto;SEO da landing page;P3;M;aberto
+OTTO-0992;20 · Onboarding, docs e produto;Blog ou changelog de recursos;P3;M;aberto
+OTTO-0993;20 · Onboarding, docs e produto;E-mails transacionais;P3;M;aberto
+OTTO-0994;20 · Onboarding, docs e produto;Convite e compartilhamento;P3;M;aberto
+OTTO-0995;20 · Onboarding, docs e produto;Programa beta com feedback estruturado;P3;M;aberto
+OTTO-0996;20 · Onboarding, docs e produto;Localização PT, EN e ES;P3;L;aberto
+OTTO-0997;20 · Onboarding, docs e produto;Roadmap de 12 meses revisado trimestralmente;P3;S;aberto
+OTTO-0998;20 · Onboarding, docs e produto;Easter egg discreto, sem atrapalhar;P3;S;aberto
+OTTO-0999;20 · Onboarding, docs e produto;Revisar toda a microcopy em busca de jargão;P2;M;aberto
+OTTO-1000;20 · Onboarding, docs e produto;Medir o tempo até a primeira tarefa concluída;P2;M;aberto
