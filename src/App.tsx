@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } from 'react';
 import {
   ActivityItem,
   ChatMessage,
@@ -18,13 +18,30 @@ import {
 } from './types/otto';
 import type { OttoHologramContent } from './components/hologram';
 import { OttoLiquidView } from './components/OttoLiquidView';
-import { PlanetaryMemoryModal } from './components/PlanetaryMemoryModal';
-import { SettingsModal } from './components/SettingsModal';
-import { ConfirmationDialog } from './components/ConfirmationDialog';
-import { AgentModeModal } from './components/AgentModeModal';
-import { YouTubeWidget, YouTubeVideoData } from './components/YouTubeWidget';
-import { DataHubModal } from './components/datahub';
-import { DataHubPreviewModal } from './components/datahub/DataHubPreviewModal';
+import type { YouTubeVideoData } from './components/YouTubeWidget';
+
+// Componentes pesados carregados sob demanda (code splitting real).
+const PlanetaryMemoryModal = lazy(() =>
+  import('./components/PlanetaryMemoryModal').then((m) => ({ default: m.PlanetaryMemoryModal }))
+);
+const SettingsModal = lazy(() =>
+  import('./components/SettingsModal').then((m) => ({ default: m.SettingsModal }))
+);
+const ConfirmationDialog = lazy(() =>
+  import('./components/ConfirmationDialog').then((m) => ({ default: m.ConfirmationDialog }))
+);
+const AgentModeModal = lazy(() =>
+  import('./components/AgentModeModal').then((m) => ({ default: m.AgentModeModal }))
+);
+const YouTubeWidget = lazy(() =>
+  import('./components/YouTubeWidget').then((m) => ({ default: m.YouTubeWidget }))
+);
+const DataHubModal = lazy(() =>
+  import('./components/datahub/DataHubModal').then((m) => ({ default: m.DataHubModal }))
+);
+const DataHubPreviewModal = lazy(() =>
+  import('./components/datahub/DataHubPreviewModal').then((m) => ({ default: m.DataHubPreviewModal }))
+);
 import { OttoFile } from './types/dataHub';
 import { DataHubStorage } from './services/dataHubStorage';
 import { audioAnalyzer } from './services/audioAnalyzer';
@@ -797,69 +814,83 @@ export default function App() {
       />
 
       {/* OTTO DATA HUB MODAL */}
-      <DataHubModal
-        isOpen={showDataHubModal}
-        onClose={() => setShowDataHubModal(false)}
-        onAskOttoAboutFiles={(prompt) => handleProcessCommand(prompt)}
-      />
+            <Suspense fallback={null}>
+  <DataHubModal
+          isOpen={showDataHubModal}
+          onClose={() => setShowDataHubModal(false)}
+          onAskOttoAboutFiles={(prompt) => handleProcessCommand(prompt)}
+        />
+      </Suspense>
 
       {/* OTTO FILE PREVIEW MODAL (Videos, Audios, PDFs, Spreadsheets, Images, Code) */}
-      <DataHubPreviewModal
-        file={selectedPreviewFile}
-        isOpen={showPreviewModal}
-        onClose={() => {
-          setShowPreviewModal(false);
-          setSelectedPreviewFile(null);
-        }}
-        onAskOttoAboutFile={(file, prompt) => handleProcessCommand(prompt)}
-      />
+            <Suspense fallback={null}>
+  <DataHubPreviewModal
+          file={selectedPreviewFile}
+          isOpen={showPreviewModal}
+          onClose={() => {
+            setShowPreviewModal(false);
+            setSelectedPreviewFile(null);
+          }}
+          onAskOttoAboutFile={(file, prompt) => handleProcessCommand(prompt)}
+        />
+      </Suspense>
 
       {/* INTEGRATED YOUTUBE WORKSPACE PLAYER */}
-      <YouTubeWidget
-        isOpen={youtubeState.isOpen}
-        onClose={() => setYoutubeState((prev) => ({ ...prev, isOpen: false }))}
-        query={youtubeState.query}
-        topVideo={youtubeState.topVideo}
-        relatedVideos={youtubeState.relatedVideos}
-        onSelectVideo={(video) =>
-          setYoutubeState((prev) => ({ ...prev, topVideo: video }))
-        }
-      />
+            <Suspense fallback={null}>
+  <YouTubeWidget
+          isOpen={youtubeState.isOpen}
+          onClose={() => setYoutubeState((prev) => ({ ...prev, isOpen: false }))}
+          query={youtubeState.query}
+          topVideo={youtubeState.topVideo}
+          relatedVideos={youtubeState.relatedVideos}
+          onSelectVideo={(video) =>
+            setYoutubeState((prev) => ({ ...prev, topVideo: video }))
+          }
+        />
+      </Suspense>
 
       {/* MODALS */}
-      <PlanetaryMemoryModal
-        isOpen={showMemoryModal}
-        onClose={() => setShowMemoryModal(false)}
-        onMemoryChanged={() => addActivity('Memória central do OTTO sincronizada.', 'info')}
-        onSelectTopicForChat={(topicText) => handleProcessCommand(topicText)}
-        onSearchTopic={(query) => handleProcessCommand(`Pesquise na web sobre ${query}`)}
-      />
+            <Suspense fallback={null}>
+  <PlanetaryMemoryModal
+          isOpen={showMemoryModal}
+          onClose={() => setShowMemoryModal(false)}
+          onMemoryChanged={() => addActivity('Memória central do OTTO sincronizada.', 'info')}
+          onSelectTopicForChat={(topicText) => handleProcessCommand(topicText)}
+          onSearchTopic={(query) => handleProcessCommand(`Pesquise na web sobre ${query}`)}
+        />
+      </Suspense>
 
-      <SettingsModal
-        isOpen={showSettingsModal}
-        onClose={() => setShowSettingsModal(false)}
-        settings={settings}
-        onUpdateSettings={handleUpdateSettings}
-      />
+            <Suspense fallback={null}>
+  <SettingsModal
+          isOpen={showSettingsModal}
+          onClose={() => setShowSettingsModal(false)}
+          settings={settings}
+          onUpdateSettings={handleUpdateSettings}
+        />
+      </Suspense>
 
-      <AgentModeModal
-        isOpen={showAgentModal}
-        onClose={() => setShowAgentModal(false)}
-        plan={currentPlan}
-        initialTaskState={currentTaskState}
-        onUpdatePlan={(updatedPlan) => setCurrentPlan(updatedPlan)}
-        onStepCompleted={(step, msg) => addActivity(`Etapa concluída: ${step.title} — ${msg}`, 'success')}
-        settings={settings}
-        onRunNewTask={(taskPrompt) => handleProcessCommand(taskPrompt)}
-      />
+            <Suspense fallback={null}>
+  <AgentModeModal
+          isOpen={showAgentModal}
+          onClose={() => setShowAgentModal(false)}
+          plan={currentPlan}
+          initialTaskState={currentTaskState}
+          onUpdatePlan={(updatedPlan) => setCurrentPlan(updatedPlan)}
+          onStepCompleted={(step, msg) => addActivity(`Etapa concluída: ${step.title} — ${msg}`, 'success')}
+          settings={settings}
+          onRunNewTask={(taskPrompt) => handleProcessCommand(taskPrompt)}
+        />
+      </Suspense>
 
-      <ConfirmationDialog
-        isOpen={Boolean(pendingConfirmation)}
-        prompt={pendingConfirmation?.prompt || ''}
-        action={pendingConfirmation?.action || null}
-        onConfirm={handleConfirmAction}
-        onCancel={handleCancelAction}
-      />
+            <Suspense fallback={null}>
+  <ConfirmationDialog
+          isOpen={Boolean(pendingConfirmation)}
+          prompt={pendingConfirmation?.prompt || ''}
+          action={pendingConfirmation?.action || null}
+          onConfirm={handleConfirmAction}
+          onCancel={handleCancelAction}
+        />
+      </Suspense>
     </div>
   );
 }

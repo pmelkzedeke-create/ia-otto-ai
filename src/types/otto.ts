@@ -262,6 +262,8 @@ export interface SystemTelemetry {
   nodeVersion: string;
   serverTime: string;
   batteryPercent?: number;
+  /** false quando os dados são apenas o placeholder de servidor indisponível. */
+  available?: boolean;
 }
 
 export interface WorkspaceItem {

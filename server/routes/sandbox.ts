@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { CodeSandbox } from '../codeSandbox.js';
-import { isCommandAllowed } from '../security.js';
+import { validateCommand, ALLOWED_COMMANDS_HINT } from '../security.js';
 
 export const sandboxRouter = Router();
 
@@ -55,9 +55,10 @@ sandboxRouter.post('/api/terminal/execute', async (req, res) => {
     const trimmed = command.trim();
 
     // 1. Validação por Lista Branca (Whitelist)
-    if (!isCommandAllowed(trimmed)) {
+    const validation = validateCommand(trimmed);
+    if (!validation.allowed) {
       return res.status(403).json({
-        error: 'Comando não permitido pela política de segurança (whitelist). Comandos permitidos: ls, cat, pwd, echo, mkdir, node, python3, git status, git log, npm, bun.',
+        error: `Comando bloqueado pela política de segurança: ${validation.reason} Permitidos: ${ALLOWED_COMMANDS_HINT}. Para executar código, use o CodeSandbox (/api/sandbox/execute).`,
       });
     }
 

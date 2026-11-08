@@ -6,24 +6,29 @@ import { apiFetch, setAccessToken, readSessionToken, ApiAuthError } from './http
 
 export { ApiAuthError };
 
-const DEFAULT_SYSTEM_TELEMETRY: SystemTelemetry = {
-  platform: typeof navigator !== 'undefined' ? (navigator.platform || 'Linux x86_64') : 'Linux x86_64',
-  release: '6.6.137',
-  type: 'Linux',
-  arch: 'x64',
-  hostname: 'otto-station',
-  uptimeSeconds: 14280,
-  cpuModel: 'Intel Core i9-13900K / Apple Silicon Neural Engine',
-  cpuCores: typeof navigator !== 'undefined' && navigator.hardwareConcurrency ? navigator.hardwareConcurrency : 16,
-  cpuUsagePercent: 28,
-  totalMemoryBytes: 16 * 1024 * 1024 * 1024,
-  freeMemoryBytes: 9 * 1024 * 1024 * 1024,
-  usedMemoryBytes: 7 * 1024 * 1024 * 1024,
-  memoryUsagePercent: 44,
-  nodeVersion: 'v22.14.0',
+/**
+ * Telemetria usada somente quando o servidor local não responde.
+ * Antes existiam valores inventados (i9-13900K, kernel 6.6.137) que a UI
+ * exibia como se fossem o hardware real do usuário.
+ */
+const UNAVAILABLE_SYSTEM_TELEMETRY: SystemTelemetry = {
+  platform: 'indisponível',
+  release: '—',
+  type: '—',
+  arch: '—',
+  hostname: 'servidor local sem resposta',
+  uptimeSeconds: 0,
+  cpuModel: '—',
+  cpuCores: 0,
+  cpuUsagePercent: 0,
+  totalMemoryBytes: 0,
+  freeMemoryBytes: 0,
+  usedMemoryBytes: 0,
+  memoryUsagePercent: 0,
+  nodeVersion: '—',
   serverTime: new Date().toISOString(),
+  available: false,
 };
-
 const DEFAULT_PLANETARY_MEMORIES: MemoryItem[] = [
   {
     id: 'mem_1',
@@ -116,9 +121,9 @@ export class ApiBridge {
       if (res.ok && contentType.includes('application/json')) {
         return await res.json();
       }
-      return { status: 'online', providers: { gemini: true, groq: false } };
+      return { status: 'offline', providers: { gemini: false, groq: false } };
     } catch {
-      return { status: 'online', providers: { gemini: true, groq: false } };
+      return { status: 'offline', providers: { gemini: false, groq: false } };
     }
   }
 
@@ -130,15 +135,16 @@ export class ApiBridge {
         const data = await res.json();
         if (data && typeof data === 'object') {
           return {
-            ...DEFAULT_SYSTEM_TELEMETRY,
+            ...UNAVAILABLE_SYSTEM_TELEMETRY,
             ...data,
+            available: true,
           };
         }
       }
     } catch {
       // Graceful local fallback without console.error noise
     }
-    return DEFAULT_SYSTEM_TELEMETRY;
+    return UNAVAILABLE_SYSTEM_TELEMETRY;
   }
 
   public static async listFiles(subpath = ''): Promise<{ currentPath: string; items: WorkspaceItem[] }> {

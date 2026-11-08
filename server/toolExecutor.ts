@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url';
 import { CodeSandbox } from './codeSandbox.js';
 import { isCommandAllowed } from './security.js';
 import { isInside } from './paths.js';
+import { evaluateExpression } from './mathEval.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -188,23 +189,18 @@ export async function executeGroqTool(name: string, rawArgs: string | Record<str
 
       case 'calculator': {
         const expr = args.expression || args.expr || '0';
-        // Safe math evaluation
-        const sanitized = expr.replace(/[^0-9+\-*/().\s^%sqrt]/g, '');
-        let value: number = 0;
-        try {
-          const fn = new Function(`return (${sanitized.replace(/sqrt\(([^)]+)\)/g, 'Math.sqrt($1)')})`);
-          value = fn();
-        } catch {
-          value = 0;
-        }
+        // Avaliação matemática segura (parser próprio, sem eval/new Function)
+        const { value, error } = evaluateExpression(String(expr));
 
         return {
           toolName: 'calculator',
-          success: true,
+          success: !error,
           result: {
             expression: expr,
             evaluatedResult: value,
+            ...(error ? { warning: error } : {}),
           },
+          ...(error ? { error } : {}),
         };
       }
 

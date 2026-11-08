@@ -1,112 +1,107 @@
-# OTTO • IA Assistente Full-Stack
+# OTTO — Assistente Inteligente de Computador
 
-> **"Seu computador. Sua voz. Seu assistente."**
+Interface conversacional (texto e voz) que opera o computador: terminal, arquivos, execução
+de código em sandbox, memória de longo prazo, leitura de artigos, player de vídeo e TTS.
 
-O **OTTO** é um assistente de inteligência artificial de alta performance, projetado para automação e interação multimodal avançada em ambientes desktop e web. Ele combina modelos de linguagem de última geração, execução real de ferramentas em sandbox isolado, síntese de voz (TTS) de ultra-baixa latência e um orquestrador autônomo multi-agentes com persistência de dados.
-
----
-
-## 🌟 Funcionalidades Principais
-
-- 🎙️ **Interação por Voz em Tempo Real**: Captura e transcrição contínua de áudio via Web Audio API e modelos multimodais com visualizadores holográficos de onda sonora.
-- 🗣️ **Síntese de Voz (TTS Multi-Provider)**: Suporte a múltiplos provedores de voz neurais (Google AI Studio Gemini TTS, ElevenLabs e Respeecher).
-- 🛠️ **Execução Real de Ferramentas (Tool Calling)**: Busca real na internet (DuckDuckGo), calculadora matemática segura, leitura e escrita física de arquivos e criação de diretórios no workspace.
-- 🧪 **CodeSandbox Isolado**: Executor real de código (Node.js, TypeScript, Python e Bash) executado em ambiente isolado sob `/tmp` com restrição de memória, timeouts estritos e sanitização de variáveis de ambiente.
-- 🤖 **Orquestrador Multi-Agentes (Rota B)**: Arquitetura especializada de agentes (Planner, Architect, Coder, Tester, Fixer e Finalizer) que criam projetos completos, executam testes unitários e corrigem falhas automaticamente.
-- 🧠 **Memória de Longo Prazo e Contexto Seletivo**: Sistema de nós de conhecimento planetários (Knowledge, Learned, Research, System) com seleção inteligente das 15 memórias mais relevantes por relevância semântica e recência.
-- 📁 **Data Hub Integrado**: Gerenciador de arquivos completo com suporte a pré-visualização interativa de código, HTML/Web, vídeos, áudios, imagens e documentos.
-- 📊 **Gerador Autônomo de Apresentações**: Criação dinâmica de slides interativos de 6 a 8 páginas e scaffolds de projetos web gerados via IA neural.
+Stack: **React 19 + Vite 8 + Tailwind 4** no frontend, **Express + TypeScript** no backend
+(um único processo serve API e interface).
 
 ---
 
-## 🛠️ Stack Tecnológica
+## Começando
 
-- **Runtime & Gerenciador**: Bun / Node.js
-- **Linguagem**: TypeScript (Strict Mode)
-- **Backend**: Express.js com arquitetura de rotas modulares
-- **Frontend**: React 19, Vite, Tailwind CSS 4, Motion, Lucide Icons, Three.js
-- **Modelos de IA**:
-  - **GroqCloud**: Llama 3.3 70B Versatile e Llama 3.1 8B Instant (Rota A conversacional e Tool Calling ultrarrápido)
-  - **Google Gemini**: Gemini 2.5 Flash / 3.8 Flash (Visão computacional, transcrição de áudio e fallback)
-  - **TextCodeProvider**: Motor neural dedicado para geração e refatoração de código (Rota B)
-
----
-
-## 🚀 Como Executar o Projeto
-
-### Pré-requisitos
-- [Bun](https://bun.sh/) (recomendado) ou Node.js (v20+)
-- Chave de API do GroqCloud (opcional, para modelos Llama) e/ou Google Gemini API Key
-
-### Passo a Passo
-
-1. **Instale as dependências**:
-   ```bash
-   bun install
-   # ou: npm install
-   ```
-
-2. **Configure as Variáveis de Ambiente**:
-   Copie o arquivo de exemplo e configure suas chaves:
-   ```bash
-   cp .env.example .env
-   ```
-
-   Edite o `.env` e defina obrigatoriamente:
-   ```env
-   # Token obrigatório para proteção de todas as rotas da API
-   OTTO_ACCESS_TOKEN="seu_token_secreto_aqui"
-
-   # Chaves de API das IAs
-   GROQ_API_KEY="gsk_..."
-   GEMINI_API_KEY="AIza..."
-   ```
-
-3. **Inicie o Servidor**:
-   ```bash
-   bun run server.ts
-   # ou: npm run dev
-   ```
-
-4. **Acesse no Navegador**:
-   Abra `http://localhost:3000` para interagir com o OTTO.
-
----
-
-## 🔒 Avisos de Segurança & Arquitetura Defensiva
-
-1. **Controle de Acesso (x-otto-token)**:
-   - Todas as rotas sob `/api/*` exigem o cabeçalho HTTP `x-otto-token` igual ao valor definido em `OTTO_ACCESS_TOKEN`.
-   - Requisições sem o cabeçalho ou com token incorreto recebem código HTTP `401 Unauthorized`.
-   - Mantenha o token em segredo e nunca o exponha em repositórios públicos.
-
-2. **Terminal e Política de Lista Branca (Whitelist)**:
-   - A rota `/api/terminal/execute` e a ferramenta `execute_command` **não** utilizam lista negra.
-   - Apenas comandos explicitamente permitidos na lista branca são autorizados:
-     `ls`, `cat`, `pwd`, `echo`, `mkdir`, `node`, `python3`, `git status`, `git log`, `npm`, `bun`.
-   - Qualquer comando fora da lista ou que contenha caracteres de encadeamento/injeção (`;`, `&&`, `||`, `|`, `` ` ``, `$()`, `>`, `<`) é bloqueado com código HTTP `403 Forbidden`.
-
-3. **Execução Isolada em CodeSandbox**:
-   - Todo comando e script é executado dentro de uma pasta temporária isolada em `/tmp/otto_sb_...`.
-   - O ambiente é sanitizado (`cleanEnv`) para não vazar variáveis de ambiente, tokens ou chaves do host.
-   - Cada execução possui timeout rígido de CPU e limpeza recursiva garantida ao finalizar.
-
-4. **Chaves de API e Segredos**:
-   - Nunca comite chaves de API (`gsk_...`, `AIza...`, tokens) em arquivos de código ou templates como `.env.example`.
-   - Caso uma chave tenha sido exposta anteriormente, revogue-a imediatamente no painel do respectivo provedor.
-
----
-
-## 🧪 Testes de Integração
-
-Para rodar os testes automatizados de integração que validam a busca web real, o sandbox isolado e o bloqueio de rotas sem token:
 ```bash
-bun test_integration.ts
-# ou: npx tsx test_integration.ts
+npm install
+cp .env.example .env      # preencha GROQ_API_KEY ou GEMINI_API_KEY
+npm run dev               # http://localhost:3000
+```
+
+Sem chave de IA a interface abre e funciona, mas o OTTO não responde — as chamadas de modelo
+retornam erro de configuração. Para ativar, defina `GROQ_API_KEY` (Rota A) ou informe a chave
+da Rota B direto na UI, em **Configurações → ROTA B**.
+
+### Scripts
+
+| Script | O que faz |
+| --- | --- |
+| `npm run dev` | Sobe API + Vite em modo middleware (porta 3000) |
+| `npm run build` | Build de produção do frontend em `dist/` |
+| `npm start` | Produção (`NODE_ENV=production`), serve `dist/` + API |
+| `npm test` | Suíte de testes (`node --test` via tsx) |
+| `npm run typecheck` / `npm run lint` | `tsc --noEmit` com `strict` |
+
+### Produção
+
+```bash
+npm run build
+OTTO_ACCESS_TOKEN="$(openssl rand -hex 24)" npm start
+```
+
+O processo serve `dist/` e injeta o token de sessão no HTML automaticamente.
+
+---
+
+## Segurança
+
+O OTTO executa comandos e manipula arquivos — trate-o como software privilegiado.
+
+- **Autenticação obrigatória**: toda rota `/api` exige o header `x-otto-token` (ou
+  `Authorization: Bearer`). O token vem de `OTTO_ACCESS_TOKEN` ou é gerado no boot e salvo em
+  `otto_workspace/.otto_token` (0600). O frontend o obtém pela meta tag injetada no HTML,
+  protegida pela same-origin policy.
+- **Terminal é somente leitura** (`ls`, `cat`, `pwd`, `echo`, `mkdir`, `git status/log/diff`).
+  Não há execução de `node`/`python`/`npm` pelo terminal, e argumentos com caminho absoluto,
+  `..`, glob ou metacaractere de shell são recusados.
+- **Execução de código** acontece só no CodeSandbox: diretório temporário, ambiente limpo
+  (sem chaves de API), timeout e limite de output.
+- **Arquivos** ficam contidos em `otto_workspace` via checagem de `path.relative`
+  (não apenas `startsWith`).
+- Headers de segurança, rate limit em memória (`OTTO_RATE_LIMIT_PER_MIN`) e middleware de
+  erro global.
+
+O servidor escuta em `0.0.0.0`. Para uso doméstico, prefira expor apenas via VPN/reverse proxy
+com TLS; o token protege a API, mas não substitui uma camada de rede.
+
+---
+
+## Arquitetura
+
+```
+server.ts                 composição: middlewares, rotas restantes, bootstrap (Vite/estático)
+server/
+  routes/                 routers por domínio (config, memory, files, sandbox, agent, slides)
+  middleware/             auth, httpHardening (headers, rate limit, erro global)
+  session.ts              geração/persistência do token de sessão
+  paths.ts                contenção de caminhos no workspace
+  security.ts             whitelist de comandos
+  mathEval.ts             avaliador matemático seguro (sem eval)
+  codeSandbox.ts          execução isolada de código
+  toolExecutor.ts         ferramentas do agente (fs, busca, calculadora, sandbox)
+  memoryStore.ts          memória planetária persistida em JSON
+  groqService.ts          integração Groq (Rota A)
+  textCodeProvider.ts     provedor de texto & código (Rota B)
+  taskRouter.ts           roteamento de intenção
+  agentOrchestrator.ts    orquestração de tarefas multi-etapa
+src/
+  App.tsx                 shell da aplicação
+  components/             UI (modais pesados carregados com React.lazy)
+  services/               http (token), apiBridge, voice, tts, dataHub
+tests/                    testes de segurança, caminhos, auth e matemática
+otto_workspace/           workspace de runtime (dados não versionados)
 ```
 
 ---
 
-## 📄 Licença
+## Testes
 
-Distribuído sob a licença **MIT**. Consulte o arquivo [LICENSE](LICENSE) para mais detalhes.
+```bash
+npm test
+```
+
+Cobrem: whitelist do terminal (injeção de shell, caminhos absolutos, execução de código),
+contenção de caminhos no workspace (incluindo o caso de diretório irmão com prefixo igual),
+middleware de autenticação e o avaliador matemático.
+
+## Licença
+
+Apache-2.0 — ver `LICENSE`.
