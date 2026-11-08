@@ -48,6 +48,9 @@ import { audioAnalyzer } from './services/audioAnalyzer';
 import { soundEffects } from './services/audioSynthesizer';
 import { voiceEngine } from './services/voiceEngine';
 import { ttsEngine } from './services/ttsEngine';
+import { describeApiError } from './services/http';
+import { loadHistory, saveHistory } from './services/chatHistoryStore';
+import { OfflineBanner } from './components/OfflineBanner';
 import { ApiBridge } from './services/apiBridge';
 import { ToolRouter } from './services/toolRouter';
 import { CheckCircle2, AlertTriangle, XCircle, Info, Activity, X } from 'lucide-react';
@@ -100,15 +103,19 @@ export default function App() {
   // Activity Feed (Real actions only)
   const [activities, setActivities] = useState<ActivityItem[]>([]);
 
-  // Chat Feed (Clean initial state with dynamic welcome)
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
-    {
-      id: 'msg_welcome',
-      sender: 'otto',
-      text: 'Olá! Sou o OTTO Liquid. Como posso ajudar você hoje?',
-      timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-    },
-  ]);
+  // Chat Feed — restaurado do disco quando existe; a recarga não apaga mais a conversa.
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>(() => {
+    const restored = loadHistory();
+    if (restored.length > 0) return restored;
+    return [
+      {
+        id: 'msg_welcome',
+        sender: 'otto' as const,
+        text: 'Olá! Sou o OTTO Liquid. Como posso ajudar você hoje?',
+        timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+      },
+    ];
+  });
 
   const latestOttoMessage = useMemo(() => {
     for (let i = chatMessages.length - 1; i >= 0; i--) {
@@ -232,6 +239,21 @@ export default function App() {
     chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages]);
 
+  // O estado ERROR é visual: volta sozinho para IDLE se nada depende dele.
+  useEffect(() => {
+    if (state !== 'ERROR' || pendingConfirmation) return;
+    const timer = setTimeout(() => setState((curr) => (curr === 'ERROR' ? 'IDLE' : curr)), 6000);
+    return () => clearTimeout(timer);
+  }, [state, pendingConfirmation]);
+
+  // Persistência do histórico: sobrevive a F5, recarga do bridge de build e erro fatal.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      saveHistory(chatMessages);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [chatMessages]);
+
   // Sync TTS state with OTTO state
   useEffect(() => {
     ttsEngine.registerSpeakingListener((speaking) => {
@@ -298,6 +320,34 @@ export default function App() {
     }
   }, [addActivity]);
 
+  // Guarda contra envio duplo e watchdog do estado "pensando".
+  // Sem isto, um stream que morre no meio deixava o OTTO travado em THINKING para sempre.
+  const busyRef = useRef(false);
+  const thinkingWatchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const stopThinkingWatchdog = useCallback(() => {
+    if (thinkingWatchdogRef.current) {
+      clearTimeout(thinkingWatchdogRef.current);
+      thinkingWatchdogRef.current = null;
+    }
+  }, []);
+
+  const startThinkingWatchdog = useCallback(() => {
+    stopThinkingWatchdog();
+    thinkingWatchdogRef.current = setTimeout(() => {
+      thinkingWatchdogRef.current = null;
+      busyRef.current = false;
+      setState((curr) => (curr === 'THINKING' || curr === 'EXECUTING' ? 'IDLE' : curr));
+      setInterimTranscript('');
+      addActivity(
+        'A resposta demorou mais de 90 segundos e foi encerrada. Tente novamente ou simplifique o pedido.',
+        'error'
+      );
+    }, 90_000);
+  }, [addActivity, stopThinkingWatchdog]);
+
+  useEffect(() => () => stopThinkingWatchdog(), [stopThinkingWatchdog]);
+
   // Process a command (either from speech or typed in the chat input)
   const handleProcessCommand = useCallback(
     async (
@@ -310,9 +360,16 @@ export default function App() {
       const promptText = spokenText.trim() || (options?.attachedImage ? 'Analise esta imagem em detalhes' : '');
       if (!promptText && !options?.attachedImage && !options?.attachedFile) return;
 
+      if (busyRef.current) {
+        addActivity('Ainda estou processando o comando anterior. Aguarde a resposta.', 'warning');
+        return;
+      }
+      busyRef.current = true;
+
       setTranscript(promptText);
       setInterimTranscript('');
       setState('THINKING');
+      startThinkingWatchdog();
 
       // Add to chat feed
       const timeStr = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
@@ -601,8 +658,9 @@ export default function App() {
         setState('IDLE');
       } catch (err: any) {
         console.error('Error processing command:', err);
+        stopThinkingWatchdog();
         setState('ERROR');
-        const fallbackMsg = err?.message || 'Não consegui interpretar o comando.';
+        const fallbackMsg = describeApiError(err);
         addActivity(fallbackMsg, 'error');
 
         setChatMessages((prev) => [
@@ -629,9 +687,14 @@ export default function App() {
           });
           voiceEngine.onAssistantFinishedSpeaking();
         }
+      } finally {
+        // Sempre libera a trava e o watchdog, mesmo em return antecipado
+        // (ex.: confirmação de ação de alto risco) ou em erro.
+        stopThinkingWatchdog();
+        busyRef.current = false;
       }
     },
-    [addActivity, settings, openYouTubePlayer]
+    [addActivity, settings, openYouTubePlayer, startThinkingWatchdog, stopThinkingWatchdog]
   );
 
   const handleProcessCommandRef = useRef(handleProcessCommand);
@@ -759,6 +822,10 @@ export default function App() {
   const handleChatSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!textInput.trim()) return;
+    if (busyRef.current) {
+      addActivity('Ainda estou processando o comando anterior. Aguarde a resposta.', 'warning');
+      return;
+    }
     const cmd = textInput.trim();
     setTextInput('');
     handleProcessCommand(cmd);
@@ -819,6 +886,7 @@ export default function App() {
 
   return (
     <div className={`otto-shell h-[100dvh] w-screen relative overflow-hidden select-none font-sans transition-colors duration-300 ${isLightMode ? 'otto-light-bg text-slate-900 theme-light' : 'bg-[#090a0d] text-slate-100'}`}>
+      <OfflineBanner isLight={isLightMode} />
       <div
         className="h-full w-full origin-center transition-transform duration-500 ease-out"
         style={{

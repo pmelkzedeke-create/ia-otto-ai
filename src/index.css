@@ -1274,3 +1274,106 @@
 .theme-light .dh-panel .text-amber-400 { color: #b45309; }
 .theme-light .dh-panel .text-violet-300,
 .theme-light .dh-panel .text-violet-400 { color: #6d28d9; }
+
+/* ------------------------------------------------------------------ */
+/* OTTO · FAIXA DE OFFLINE                                             */
+/* ------------------------------------------------------------------ */
+.ot-offline {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  border-radius: 0 0 14px 14px;
+  background: rgba(24, 26, 32, 0.92);
+  color: #f8fafc;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  box-shadow: 0 12px 30px -18px rgba(0, 0, 0, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 0;
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  transform: translate(-50%, -120%);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform 380ms cubic-bezier(.32, .72, 0, 1),
+    opacity 260ms ease;
+  will-change: transform, opacity;
+}
+
+.ot-offline--visible {
+  transform: translate(-50%, 0);
+  opacity: 1;
+}
+
+.ot-offline--light {
+  background: rgba(255, 255, 255, 0.94);
+  color: #0f172a;
+  border-color: rgba(15, 23, 42, 0.08);
+  box-shadow: 0 14px 34px -20px rgba(15, 23, 42, 0.45);
+}
+
+.ot-offline__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: #f87171;
+  box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.18);
+}
+
+.ot-offline__dot--ok {
+  background: #34d399;
+  box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.18);
+}
+
+.ot-offline__text {
+  white-space: nowrap;
+}
+
+@media (max-width: 420px) {
+  .ot-offline__text {
+    white-space: normal;
+    line-height: 1.25;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* OTTO · ACESSIBILIDADE GLOBAL                                        */
+/* ------------------------------------------------------------------ */
+
+/* Foco sempre visível, com anel de 2px e respiro. Antes o foco sumia em
+   vários botões porque o outline era removido sem substituto. */
+:focus-visible {
+  outline: 2px solid rgba(129, 140, 248, 0.95);
+  outline-offset: 2px;
+}
+
+.theme-light :focus-visible {
+  outline-color: #4f6ef7;
+}
+
+/* Campos de texto têm o próprio anel (ot-focus); evita anel duplo. */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline-offset: 1px;
+}
+
+/* Movimento reduzido de verdade: nada de animação infinita, nada de
+   transição longa. O estado final é aplicado imediatamente. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

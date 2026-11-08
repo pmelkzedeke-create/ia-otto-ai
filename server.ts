@@ -11,6 +11,12 @@ import { GroqService, AVAILABLE_GROQ_TOOLS, GroqMessage } from './server/groqSer
 import { executeGroqTool } from './server/toolExecutor.js';
 import { buildDynamicSystemPrompt } from './server/systemPrompt.js';
 import { TextCodeProvider } from './server/textCodeProvider.js';
+import {
+  safeFetch,
+  readBodyWithLimit,
+  UnsafeUrlError,
+  PayloadTooLargeError,
+} from './server/urlGuard.js';
 import { CodeSandbox } from './server/codeSandbox.js';
 import { AgentOrchestrator, TaskState } from './server/agentOrchestrator.js';
 import { TaskRouter, RouteDecision } from './server/taskRouter.js';
@@ -1861,17 +1867,26 @@ app.get('/api/web/knowledge', async (req, res) => {
 });
 
 // 8.16 High-Performance Image Proxy & CORS Buster
+// Segurança: a URL vem do cliente, então passa pela guarda anti-SSRF
+// (bloqueia loopback, rede interna, metadados de nuvem e redirecionamentos
+// encadeados), com timeout e teto de tamanho no download.
+const IMAGE_PROXY_TIMEOUT_MS = 8000;
+const IMAGE_PROXY_MAX_BYTES = 8 * 1024 * 1024;
+
 app.get('/api/proxy/image', async (req, res) => {
-  const imageUrl = req.query.url as string;
+  const imageUrl = String(req.query.url || '');
   if (!imageUrl) {
     return res.status(400).send('URL de imagem obrigatória');
   }
 
   try {
-    const response = await fetch(imageUrl, {
+    const response = await safeFetch(imageUrl, {
+      timeoutMs: IMAGE_PROXY_TIMEOUT_MS,
+      maxBytes: IMAGE_PROXY_MAX_BYTES,
+      acceptContentTypes: ['image/'],
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+        'Accept': 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
         'Referer': imageUrl.includes('wikimedia.org') || imageUrl.includes('wikipedia.org')
           ? 'https://pt.wikipedia.org/'
           : 'https://google.com/',
@@ -1882,18 +1897,28 @@ app.get('/api/proxy/image', async (req, res) => {
       return res.status(response.status).send(`Falha ao carregar imagem remota: ${response.statusText}`);
     }
 
+    const buffer = await readBodyWithLimit(response, IMAGE_PROXY_MAX_BYTES);
     const contentType = response.headers.get('content-type') || 'image/jpeg';
+
     res.setHeader('Content-Type', contentType);
     res.setHeader('Cache-Control', 'public, max-age=86400, immutable');
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
-
-    const arrayBuffer = await response.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    res.setHeader('X-Content-Type-Options', 'nosniff');
     res.send(buffer);
   } catch (err: any) {
+    if (err instanceof UnsafeUrlError) {
+      console.warn('[ImageProxy] URL bloqueada:', imageUrl, err.message);
+      return res.status(400).send(err.message);
+    }
+    if (err instanceof PayloadTooLargeError) {
+      return res.status(413).send(err.message);
+    }
+    if (err?.name === 'TimeoutError' || err?.name === 'AbortError') {
+      return res.status(504).send('A imagem demorou demais para carregar.');
+    }
     console.warn('[ImageProxy] Error proxying image:', imageUrl, err?.message);
-    res.status(500).send('Erro ao buscar imagem');
+    res.status(502).send('Erro ao buscar imagem');
   }
 });
 

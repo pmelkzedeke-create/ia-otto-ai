@@ -1331,3 +1331,30 @@ As cinco regras que filtram **todos** os 1.000 itens:
 6. Revisão completa a cada 90 dias, com os números do Anexo A na mão.
 
 > Arquivo irmão: `docs/PLANO-1000.csv` — a mesma base em planilha (separador `;`, BOM para Excel), pronta para filtrar e ordenar.
+
+---
+
+## Anexo E · Registro de execução
+
+### Onda 0 · lote 1 — 07/11/2026 (13 itens)
+
+| ID | O que foi feito | Onde |
+|---|---|---|
+| OTTO-0002 | Watchdog de 90 s: stream morto não deixa o OTTO preso em "pensando"; `finally` libera a trava sempre | `src/App.tsx` |
+| OTTO-0003 | Trava de concorrência (`busyRef`): envio duplo não duplica mensagem e não apaga o texto digitado | `src/App.tsx` |
+| OTTO-0008 | Histórico persistido em `localStorage`, formato versionado, teto de 80 mensagens / 200 KB | `src/services/chatHistoryStore.ts` |
+| OTTO-0009 | Recarga do ErrorBoundary (e F5) restaura a conversa em vez de apagar | `src/App.tsx` |
+| OTTO-0020 | Erro 429 explicado, com `Retry-After` na mensagem | `src/services/http.ts` |
+| OTTO-0021 | Timeout por tentativa em toda chamada de API — fim do spinner infinito | `src/services/http.ts` |
+| OTTO-0022 | Retry com backoff exponencial em 502/503/504 e falha de rede | `src/services/http.ts` |
+| OTTO-0041 | `prefers-reduced-motion` desliga animações infinitas de verdade | `src/index.css` |
+| OTTO-0042 | `focus-visible` global, com anel de 2 px e cor por tema | `src/index.css` |
+| OTTO-0050 | Faixa de offline com reconexão automática e anúncio em `aria-live` | `src/components/OfflineBanner.tsx` |
+| OTTO-0473 | Timeout de 8 s no proxy de imagem | `server.ts` |
+| OTTO-0754 | Guarda anti-SSRF: bloqueia loopback, RFC 1918, CGNAT, link-local e metadados de nuvem | `server/urlGuard.ts` |
+| OTTO-0761 | Proxy de imagem valida sintaxe, resolve DNS, segue redirects um a um e limita corpo a 8 MB | `server/urlGuard.ts` |
+
+**Testes novos:** 28 (URL guard, histórico, timeout/retry) — suíte total em 52.
+**Validação:** `tsc` limpo · build OK · `curl` confirmando 400 para `127.0.0.1`, `169.254.169.254`, `192.168.x`, `localhost` e `file://` no proxy.
+
+**Próximo lote sugerido:** OTTO-0005 (microfone negado), OTTO-0026/0027 (plano preso em "rodando"), OTTO-0033 (silêncio não encerra a escuta), OTTO-0031/0032 (links e cópia), OTTO-0601/0604 (a11y do chat), OTTO-0651 (manifest PWA).

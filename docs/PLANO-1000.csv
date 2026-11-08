@@ -1,13 +1,13 @@
 ﻿ID;Area;Item;Prioridade;Esforco;Status
 OTTO-0001;01 · Bugs e estabilidade;Recarga do bridge de build interrompe o ditado e apaga o rascunho: adiar reload com gravação ativa;P0;M;aberto
-OTTO-0002;01 · Bugs e estabilidade;"Estado ""pensando"" fica preso quando o stream aborta no meio da resposta";P0;S;aberto
-OTTO-0003;01 · Bugs e estabilidade;Envio rápido (duplo clique ou Enter duplo) duplica a mensagem do usuário;P1;S;aberto
+OTTO-0002;01 · Bugs e estabilidade;"Estado ""pensando"" fica preso quando o stream aborta no meio da resposta";P0;S;concluído
+OTTO-0003;01 · Bugs e estabilidade;Envio rápido (duplo clique ou Enter duplo) duplica a mensagem do usuário;P1;S;concluído
 OTTO-0004;01 · Bugs e estabilidade;Resposta do assistente desaparece ao alternar claro/escuro (remontagem da lista);P1;M;aberto
 OTTO-0005;01 · Bugs e estabilidade;Microfone negado não gera feedback visual nem instrução de desbloqueio;P0;S;aberto
 OTTO-0006;01 · Bugs e estabilidade;"Falha de rede no envio deixa mensagem órfã, sem botão ""reenviar""";P1;M;aberto
 OTTO-0007;01 · Bugs e estabilidade;Scroll do chat briga com o streaming: usuário rola para cima e é puxado de volta;P1;S;aberto
-OTTO-0008;01 · Bugs e estabilidade;Conversa não sobrevive a F5: nenhuma persistência local do histórico;P0;M;aberto
-OTTO-0009;01 · Bugs e estabilidade;ErrorBoundary recarrega a página e apaga o histórico em memória;P1;M;aberto
+OTTO-0008;01 · Bugs e estabilidade;Conversa não sobrevive a F5: nenhuma persistência local do histórico;P0;M;concluído
+OTTO-0009;01 · Bugs e estabilidade;ErrorBoundary recarrega a página e apaga o histórico em memória;P1;M;concluído
 OTTO-0010;01 · Bugs e estabilidade;Modal aberto com teclado mobile empurra o painel para fora da tela;P1;M;aberto
 OTTO-0011;01 · Bugs e estabilidade;AudioContext fica suspenso no iOS até um gesto: a primeira fala sai muda;P1;M;aberto
 OTTO-0012;01 · Bugs e estabilidade;"Botão ""parar"" não cancela a síntese em andamento: o áudio continua";P0;S;aberto
@@ -18,9 +18,9 @@ OTTO-0016;01 · Bugs e estabilidade;AudioContext não é fechado no unmount: vaz
 OTTO-0017;01 · Bugs e estabilidade;Timers das partículas do holograma continuam rodando com a aba em background;P2;M;aberto
 OTTO-0018;01 · Bugs e estabilidade;Listener de resize acumulado a cada montagem do holograma;P2;S;aberto
 OTTO-0019;01 · Bugs e estabilidade;`setInterval` do relógio do header nunca é limpo;P2;S;aberto
-OTTO-0020;01 · Bugs e estabilidade;"Erro de cota (429) aparece como ""algo deu errado"" genérico";P0;S;aberto
-OTTO-0021;01 · Bugs e estabilidade;Falta de timeout no fetch de streaming deixa spinner infinito;P0;S;aberto
-OTTO-0022;01 · Bugs e estabilidade;Sem retry automático em 502/503 do provedor de IA;P1;M;aberto
+OTTO-0020;01 · Bugs e estabilidade;"Erro de cota (429) aparece como ""algo deu errado"" genérico";P0;S;concluído
+OTTO-0021;01 · Bugs e estabilidade;Falta de timeout no fetch de streaming deixa spinner infinito;P0;S;concluído
+OTTO-0022;01 · Bugs e estabilidade;Sem retry automático em 502/503 do provedor de IA;P1;M;concluído
 OTTO-0023;01 · Bugs e estabilidade;Trocar de modelo em Configurações só vale depois de recarregar a página;P1;M;aberto
 OTTO-0024;01 · Bugs e estabilidade;Preview do Data Hub abre vazio quando o blob expira;P1;M;aberto
 OTTO-0025;01 · Bugs e estabilidade;Excluir item da memória não atualiza a lista até reabrir o modal;P2;S;aberto
@@ -39,8 +39,8 @@ OTTO-0037;01 · Bugs e estabilidade;Pinch acidental no iOS quebra o layout do ch
 OTTO-0038;01 · Bugs e estabilidade;Área segura (notch) corta o header no iPhone;P1;S;aberto
 OTTO-0039;01 · Bugs e estabilidade;Tema claro: placeholder do campo de texto fica ilegível;P1;S;aberto
 OTTO-0040;01 · Bugs e estabilidade;Tema claro: sombra escura do painel do Data Hub vaza para o fundo;P1;S;aberto
-OTTO-0041;01 · Bugs e estabilidade;`prefers-reduced-motion` não desliga a animação do mascote;P1;S;aberto
-OTTO-0042;01 · Bugs e estabilidade;Foco de teclado invisível nos botões do header (outline removido);P1;S;aberto
+OTTO-0041;01 · Bugs e estabilidade;`prefers-reduced-motion` não desliga a animação do mascote;P1;S;concluído
+OTTO-0042;01 · Bugs e estabilidade;Foco de teclado invisível nos botões do header (outline removido);P1;S;concluído
 OTTO-0043;01 · Bugs e estabilidade;Tab não alcança o campo de texto depois de fechar um modal;P2;M;aberto
 OTTO-0044;01 · Bugs e estabilidade;Esc fecha o modal errado quando dois estão empilhados;P2;M;aberto
 OTTO-0045;01 · Bugs e estabilidade;Texto longo sem quebra estoura a bolha horizontalmente;P2;S;aberto
@@ -48,7 +48,7 @@ OTTO-0046;01 · Bugs e estabilidade;Emoji e acentos quebram o efeito de digitaç
 OTTO-0047;01 · Bugs e estabilidade;Mensagens antigas perdem formatação ao restaurar a sessão;P2;M;aberto
 OTTO-0048;01 · Bugs e estabilidade;Console poluído por warning de `key` duplicada na lista de mensagens;P2;S;aberto
 OTTO-0049;01 · Bugs e estabilidade;Erros de runtime não são reportados a lugar nenhum além do console;P1;M;aberto
-OTTO-0050;01 · Bugs e estabilidade;"Nenhuma tela de ""offline"" explícita: usuário acha que o app travou";P1;S;aberto
+OTTO-0050;01 · Bugs e estabilidade;"Nenhuma tela de ""offline"" explícita: usuário acha que o app travou";P1;S;concluído
 OTTO-0051;02 · Voz: entrada (STT);"Wake word ""Otto"" processada no dispositivo, sem nuvem";P1;L;aberto
 OTTO-0052;02 · Voz: entrada (STT);VAD para cortar silêncio no início e no fim da fala antes do upload;P0;L;aberto
 OTTO-0053;02 · Voz: entrada (STT);Push-to-talk (segurar espaço) como alternativa ao modo contínuo;P1;M;aberto
@@ -471,7 +471,7 @@ OTTO-0469;10 · Hologramas e visualização;Fila de hologramas quando vários ch
 OTTO-0470;10 · Hologramas e visualização;Limite de hologramas simultâneos;P2;S;aberto
 OTTO-0471;10 · Hologramas e visualização;Estado de carregamento consistente entre tipos;P2;S;aberto
 OTTO-0472;10 · Hologramas e visualização;Placeholder quando a imagem falha (404);P1;S;aberto
-OTTO-0473;10 · Hologramas e visualização;Timeout no proxy de imagem;P1;S;aberto
+OTTO-0473;10 · Hologramas e visualização;Timeout no proxy de imagem;P1;S;concluído
 OTTO-0474;10 · Hologramas e visualização;Cache das imagens buscadas;P2;M;aberto
 OTTO-0475;10 · Hologramas e visualização;Evitar deslocamento de layout na formação;P2;S;aberto
 OTTO-0476;10 · Hologramas e visualização;Fechar com Esc e com clique fora;P1;S;aberto
@@ -752,14 +752,14 @@ OTTO-0750;15 · Performance e bundle;Perfilar o primeiro render com React Profil
 OTTO-0751;16 · Segurança e privacidade;Token de acesso obrigatório em produção, validado em toda rota;P0;M;aberto
 OTTO-0752;16 · Segurança e privacidade;Sanitizar HTML de markdown para eliminar XSS;P0;M;aberto
 OTTO-0753;16 · Segurança e privacidade;Path traversal coberto em todos os endpoints de arquivo;P0;M;aberto
-OTTO-0754;16 · Segurança e privacidade;Bloquear IPs privados e metadados de nuvem no proxy;P0;M;aberto
+OTTO-0754;16 · Segurança e privacidade;Bloquear IPs privados e metadados de nuvem no proxy;P0;M;concluído
 OTTO-0755;16 · Segurança e privacidade;CORS restritivo, sem curinga em produção;P0;S;aberto
 OTTO-0756;16 · Segurança e privacidade;Cabeçalhos de segurança: CSP, HSTS, X-Frame-Options, nosniff;P0;M;aberto
 OTTO-0757;16 · Segurança e privacidade;Rate limit por IP nas rotas caras;P0;M;aberto
 OTTO-0758;16 · Segurança e privacidade;Nenhum segredo no bundle do frontend;P0;M;aberto
 OTTO-0759;16 · Segurança e privacidade;Execução de comando apenas com aprovação explícita;P0;M;aberto
 OTTO-0760;16 · Segurança e privacidade;Arquivos servidos somente dentro do diretório permitido;P0;M;aberto
-OTTO-0761;16 · Segurança e privacidade;SSRF no proxy de imagem e na leitura de páginas;P0;L;aberto
+OTTO-0761;16 · Segurança e privacidade;SSRF no proxy de imagem e na leitura de páginas;P0;L;concluído
 OTTO-0762;16 · Segurança e privacidade;Rate limit por usuário e por chave;P1;M;aberto
 OTTO-0763;16 · Segurança e privacidade;CSP sem unsafe-inline, com nonce;P1;L;aberto
 OTTO-0764;16 · Segurança e privacidade;Limite de tamanho de corpo em todas as rotas;P1;S;aberto
