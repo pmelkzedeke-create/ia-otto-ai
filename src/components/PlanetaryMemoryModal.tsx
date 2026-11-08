@@ -450,6 +450,14 @@ export const PlanetaryMemoryModal: React.FC<PlanetaryMemoryModalProps> = ({
         aria-labelledby="ot-mem-title"
         className="ot-mem-panel"
       >
+        {/* camada ambiente: manchas de luz que dão volume ao vidro */}
+        <div className="ot-mem-ambient" aria-hidden="true">
+          <span className="ot-mem-ambient-blob ot-mem-ambient-blob--a" />
+          <span className="ot-mem-ambient-blob ot-mem-ambient-blob--b" />
+          <span className="ot-mem-ambient-blob ot-mem-ambient-blob--c" />
+          <span className="ot-mem-ambient-sheen" />
+        </div>
+
         {/* CABEÇALHO */}
         <header className="ot-mem-header">
           <div className="ot-mem-titlewrap">
@@ -488,6 +496,11 @@ export const PlanetaryMemoryModal: React.FC<PlanetaryMemoryModalProps> = ({
         {/* ABAS + BUSCA */}
         <div className="ot-mem-toolbar">
           <div className="ot-mem-tabs" role="tablist" aria-label="Seções da memória">
+            <span
+              className="ot-mem-tabs-indicator"
+              aria-hidden="true"
+              style={{ transform: `translateX(${TABS.findIndex((entry) => entry.id === tab) * 100}%)` }}
+            />
             {TABS.map(({ id, label, icon: Icon }) => (
               <button
                 key={id}

@@ -2400,3 +2400,667 @@ select:focus-visible {
     transform: none;
   }
 }
+
+/* ==========================================================
+   OTTO · MEMÓRIA — LIQUID GLASS
+   Camadas translúcidas, aresta especular e luz ambiente.
+   Substitui as superfícies chapadas por vidro com volume.
+   ========================================================== */
+
+.ot-mem-panel {
+  isolation: isolate;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background:
+    linear-gradient(168deg, rgba(56, 64, 88, 0.55) 0%, rgba(18, 22, 31, 0.78) 42%, rgba(9, 11, 16, 0.9) 100%);
+  backdrop-filter: blur(42px) saturate(190%);
+  -webkit-backdrop-filter: blur(42px) saturate(190%);
+  box-shadow:
+    /* aresta especular superior */
+    0 1px 0 rgba(255, 255, 255, 0.26) inset,
+    0 0 0 1px rgba(0, 0, 0, 0.45),
+    0 -1px 0 rgba(255, 255, 255, 0.05) inset,
+    /* profundidade em duas camadas */
+    0 24px 60px -32px rgba(0, 0, 0, 0.85),
+    0 70px 130px -60px rgba(0, 0, 0, 0.95);
+}
+
+/* fio de luz na base, como o reflexo de uma lâmina de vidro */
+.ot-mem-panel::after {
+  content: '';
+  position: absolute;
+  inset: auto 12% -1px 12%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.32), transparent);
+  pointer-events: none;
+  z-index: 3;
+}
+
+/* ---------- luz ambiente ---------- */
+
+.ot-mem-ambient {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.ot-mem-ambient-blob {
+  position: absolute;
+  display: block;
+  border-radius: 50%;
+  filter: saturate(150%);
+  will-change: transform;
+}
+
+.ot-mem-ambient-blob--a {
+  top: -32%;
+  left: -12%;
+  width: 62%;
+  aspect-ratio: 1;
+  background: radial-gradient(circle at 40% 40%, rgba(129, 140, 248, 0.42), rgba(129, 140, 248, 0) 68%);
+  animation: ot-mem-drift-a 26s ease-in-out infinite alternate;
+}
+
+.ot-mem-ambient-blob--b {
+  top: -24%;
+  right: -18%;
+  width: 58%;
+  aspect-ratio: 1;
+  background: radial-gradient(circle at 55% 45%, rgba(56, 189, 248, 0.34), rgba(56, 189, 248, 0) 70%);
+  animation: ot-mem-drift-b 32s ease-in-out infinite alternate;
+}
+
+.ot-mem-ambient-blob--c {
+  bottom: -38%;
+  left: 26%;
+  width: 66%;
+  aspect-ratio: 1;
+  background: radial-gradient(circle at 50% 50%, rgba(45, 212, 191, 0.24), rgba(45, 212, 191, 0) 70%);
+  animation: ot-mem-drift-a 38s ease-in-out infinite alternate-reverse;
+}
+
+@keyframes ot-mem-drift-a {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to { transform: translate3d(6%, 5%, 0) scale(1.1); }
+}
+
+@keyframes ot-mem-drift-b {
+  from { transform: translate3d(0, 0, 0) scale(1.04); }
+  to { transform: translate3d(-7%, 6%, 0) scale(0.96); }
+}
+
+/* véu diagonal: o brilho que atravessa o vidro */
+.ot-mem-ambient-sheen {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(118deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.03) 26%, transparent 46%),
+    radial-gradient(80% 50% at 50% -10%, rgba(255, 255, 255, 0.1), transparent 70%);
+  opacity: 0.85;
+}
+
+/* o conteúdo precisa ficar acima da luz */
+.ot-mem-header,
+.ot-mem-toolbar,
+.ot-mem-form,
+.ot-mem-body,
+.ot-mem-detail {
+  position: relative;
+  z-index: 1;
+}
+
+/* ---------- cabeçalho: título grande, sem caixa ---------- */
+
+.ot-mem-header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.01));
+  padding: 20px 24px 16px;
+}
+
+.ot-mem-mark {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  color: #f1f5ff;
+  background:
+    radial-gradient(120% 120% at 30% 20%, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0) 60%),
+    linear-gradient(160deg, rgba(129, 140, 248, 0.6), rgba(56, 189, 248, 0.35));
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.5) inset,
+    0 12px 26px -14px rgba(129, 140, 248, 0.9);
+}
+
+.ot-mem-title {
+  font-size: 19px;
+  font-weight: 650;
+  letter-spacing: -0.022em;
+}
+
+.ot-mem-subtitle {
+  font-size: 12px;
+  letter-spacing: -0.005em;
+  opacity: 0.82;
+}
+
+.ot-mem-legend-item {
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* ---------- barra de ferramentas e abas ---------- */
+
+.ot-mem-toolbar {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.02);
+  padding: 12px 24px;
+  gap: 14px;
+}
+
+.ot-mem-tabs {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+  padding: 4px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.12) inset,
+    0 6px 18px -14px rgba(0, 0, 0, 0.9);
+  min-width: 320px;
+}
+
+.ot-mem-tabs-indicator {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: calc((100% - 8px) / 4);
+  height: calc(100% - 8px);
+  border-radius: 11px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(226, 232, 240, 0.92));
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.9) inset,
+    0 6px 16px -10px rgba(0, 0, 0, 0.85);
+  transition: transform 460ms cubic-bezier(.32, .72, 0, 1);
+  will-change: transform;
+  pointer-events: none;
+}
+
+.ot-mem-tab {
+  position: relative;
+  z-index: 1;
+  justify-content: center;
+  padding: 7px 8px;
+  border-radius: 11px;
+  color: rgba(226, 232, 240, 0.72);
+  transition: color 260ms ease;
+}
+
+.ot-mem-tab:hover {
+  background: transparent;
+  color: #f8fafc;
+}
+
+.ot-mem-tab.is-active {
+  background: transparent;
+  color: #0b1220;
+  box-shadow: none;
+}
+
+.ot-mem-tab.is-active .ot-mem-tab-badge {
+  background: rgba(15, 23, 42, 0.12);
+  color: #0b1220;
+}
+
+/* ---------- campos de vidro (estilo iOS) ---------- */
+
+.ot-mem-search,
+.ot-mem-sort {
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.1) inset,
+    0 8px 20px -18px rgba(0, 0, 0, 0.9);
+  transition: background 220ms ease, border-color 220ms ease, box-shadow 220ms ease;
+}
+
+.ot-mem-search:focus-within,
+.ot-mem-sort:focus-within {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(165, 180, 252, 0.55);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.14) inset,
+    0 0 0 3px rgba(129, 140, 248, 0.18);
+}
+
+/* ---------- botões ---------- */
+
+.ot-mem-primary {
+  border-radius: 12px;
+  background:
+    linear-gradient(180deg, #ffffff 0%, #e9eefb 100%);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.9) inset,
+    0 10px 22px -14px rgba(0, 0, 0, 0.9);
+  transition: transform 180ms cubic-bezier(.32, .72, 0, 1), filter 180ms ease, box-shadow 180ms ease;
+}
+
+.ot-mem-primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(1.03);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.9) inset,
+    0 14px 28px -14px rgba(0, 0, 0, 0.9);
+}
+
+.ot-mem-primary:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.ot-mem-ghost {
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08) inset;
+}
+
+.ot-mem-ghost:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.ot-mem-icon-btn {
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* ---------- chips ---------- */
+
+.ot-mem-chip {
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08) inset;
+  transition: transform 200ms cubic-bezier(.32,.72,0,1), background 200ms ease, color 200ms ease;
+}
+
+.ot-mem-chip:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.ot-mem-chip.is-active {
+  color: #0b1220;
+  background: linear-gradient(180deg, #ffffff, #e9eefb);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.9) inset,
+    0 8px 18px -12px rgba(0, 0, 0, 0.8);
+}
+
+/* ---------- cartões de vidro ---------- */
+
+.ot-mem-card {
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.085) 0%, rgba(255, 255, 255, 0.028) 100%);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.16) inset,
+    0 14px 30px -24px rgba(0, 0, 0, 0.9);
+  transition:
+    transform 320ms cubic-bezier(.32, .72, 0, 1),
+    border-color 260ms ease,
+    box-shadow 320ms ease,
+    background 260ms ease;
+}
+
+.ot-mem-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(255, 255, 255, 0.22);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.045) 100%);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.22) inset,
+    0 26px 50px -30px rgba(0, 0, 0, 0.95),
+    0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+/* brilho que varre o cartão ao passar o mouse */
+.ot-mem-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(115deg, transparent 32%, rgba(255, 255, 255, 0.16) 48%, transparent 62%);
+  opacity: 0;
+  transform: translateX(-28%);
+  transition: opacity 420ms ease, transform 900ms cubic-bezier(.32, .72, 0, 1);
+  pointer-events: none;
+}
+
+.ot-mem-card:hover::after {
+  opacity: 1;
+  transform: translateX(28%);
+}
+
+/* a faixa colorida vira um brilho suave na borda esquerda */
+.ot-mem-card::before {
+  width: 3px;
+  background: linear-gradient(180deg, var(--mem-color, var(--mem-accent)), transparent 88%);
+  opacity: 0.9;
+  box-shadow: 0 0 18px -2px var(--mem-color, var(--mem-accent));
+  filter: blur(0.2px);
+}
+
+.ot-mem-card.is-selected {
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.24) inset,
+    0 0 0 1px var(--mem-color, var(--mem-accent)),
+    0 22px 44px -28px rgba(0, 0, 0, 0.95);
+}
+
+.ot-mem-card-title {
+  font-size: 13.5px;
+  letter-spacing: -0.012em;
+}
+
+.ot-mem-card-body {
+  letter-spacing: -0.002em;
+}
+
+/* ---------- painel de detalhe: vidro sobre vidro ---------- */
+
+.ot-mem-detail {
+  width: min(378px, 92%);
+  padding: 20px 22px;
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
+  background: linear-gradient(180deg, rgba(30, 36, 50, 0.72), rgba(12, 15, 22, 0.9));
+  backdrop-filter: blur(34px) saturate(180%);
+  -webkit-backdrop-filter: blur(34px) saturate(180%);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.18) inset,
+    -40px 0 80px -50px rgba(0, 0, 0, 0.95);
+  animation: ot-mem-sheet-in 480ms cubic-bezier(.32, .72, 0, 1) both;
+}
+
+@keyframes ot-mem-sheet-in {
+  from { opacity: 0; transform: translateX(26px) scale(0.99); }
+  to { opacity: 1; transform: translateX(0) scale(1); }
+}
+
+.ot-mem-detail h3 {
+  font-size: 17px;
+  letter-spacing: -0.02em;
+}
+
+.ot-mem-detail-body {
+  font-size: 13px;
+  line-height: 1.62;
+}
+
+.ot-mem-detail-meta {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08) inset;
+}
+
+/* ---------- temporária ---------- */
+
+.ot-mem-list-item {
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08) inset;
+  transition: background 200ms ease, transform 200ms cubic-bezier(.32,.72,0,1);
+}
+
+.ot-mem-list-item:hover {
+  background: rgba(255, 255, 255, 0.09);
+  transform: translateY(-1px);
+}
+
+/* ---------- constelação com halo ---------- */
+
+.ot-mem-constellation svg circle[stroke] {
+  stroke-linecap: round;
+}
+
+.ot-mem-node circle:first-child {
+  filter: drop-shadow(0 0 6px currentColor);
+}
+
+.ot-mem-node {
+  transform-box: fill-box;
+}
+
+/* ---------- TEMA CLARO ---------- */
+
+.theme-light .ot-mem-panel {
+  border-color: rgba(255, 255, 255, 0.9);
+  background:
+    linear-gradient(165deg, rgba(255, 255, 255, 0.94) 0%, rgba(246, 249, 255, 0.9) 45%, rgba(238, 243, 253, 0.94) 100%);
+  backdrop-filter: blur(40px) saturate(160%);
+  -webkit-backdrop-filter: blur(40px) saturate(160%);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 1) inset,
+    0 0 0 1px rgba(15, 23, 42, 0.06),
+    0 28px 60px -36px rgba(15, 23, 42, 0.4),
+    0 80px 140px -80px rgba(15, 23, 42, 0.45);
+}
+
+.theme-light .ot-mem-ambient-blob--a {
+  background: radial-gradient(circle at 40% 40%, rgba(129, 140, 248, 0.3), transparent 68%);
+}
+
+.theme-light .ot-mem-ambient-blob--b {
+  background: radial-gradient(circle at 55% 45%, rgba(56, 189, 248, 0.24), transparent 70%);
+}
+
+.theme-light .ot-mem-ambient-blob--c {
+  background: radial-gradient(circle at 50% 50%, rgba(45, 212, 191, 0.16), transparent 70%);
+}
+
+.theme-light .ot-mem-ambient-sheen {
+  background:
+    linear-gradient(118deg, rgba(255, 255, 255, 0.75) 0%, rgba(255, 255, 255, 0.25) 26%, transparent 48%);
+  opacity: 0.9;
+}
+
+.theme-light .ot-mem-header {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.25));
+  border-bottom-color: rgba(15, 23, 42, 0.07);
+}
+
+.theme-light .ot-mem-mark {
+  color: #ffffff;
+  background:
+    radial-gradient(120% 120% at 30% 20%, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0) 60%),
+    linear-gradient(160deg, #6d8bff, #4f6ef7);
+  border-color: rgba(255, 255, 255, 0.7);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.7) inset,
+    0 12px 24px -14px rgba(79, 110, 247, 0.9);
+}
+
+.theme-light .ot-mem-legend-item {
+  background: rgba(15, 23, 42, 0.04);
+  border-color: rgba(15, 23, 42, 0.06);
+}
+
+.theme-light .ot-mem-toolbar {
+  background: rgba(255, 255, 255, 0.4);
+  border-bottom-color: rgba(15, 23, 42, 0.07);
+}
+
+.theme-light .ot-mem-tabs {
+  background: rgba(15, 23, 42, 0.045);
+  border-color: rgba(15, 23, 42, 0.06);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.9) inset;
+}
+
+.theme-light .ot-mem-tabs-indicator {
+  background: linear-gradient(180deg, #ffffff, #ffffff);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 1) inset,
+    0 1px 2px rgba(15, 23, 42, 0.12),
+    0 8px 18px -12px rgba(15, 23, 42, 0.35);
+}
+
+.theme-light .ot-mem-tab {
+  color: rgba(15, 23, 42, 0.55);
+}
+
+.theme-light .ot-mem-tab:hover {
+  color: #0f172a;
+}
+
+.theme-light .ot-mem-tab.is-active {
+  color: #0f172a;
+  background: transparent;
+  box-shadow: none;
+}
+
+.theme-light .ot-mem-search,
+.theme-light .ot-mem-sort,
+.theme-light .ot-mem-ghost,
+.theme-light .ot-mem-chip,
+.theme-light .ot-mem-icon-btn {
+  background: rgba(255, 255, 255, 0.75);
+  border-color: rgba(15, 23, 42, 0.08);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 1) inset,
+    0 1px 2px rgba(15, 23, 42, 0.05);
+}
+
+.theme-light .ot-mem-search:focus-within,
+.theme-light .ot-mem-sort:focus-within {
+  background: #ffffff;
+  border-color: rgba(79, 110, 247, 0.55);
+  box-shadow: 0 0 0 3px rgba(79, 110, 247, 0.14);
+}
+
+.theme-light .ot-mem-primary {
+  background: linear-gradient(180deg, #1f2937, #0f172a);
+  color: #f8fafc;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.18) inset,
+    0 12px 24px -16px rgba(15, 23, 42, 0.65);
+}
+
+.theme-light .ot-mem-chip.is-active {
+  background: linear-gradient(180deg, #1f2937, #0f172a);
+  color: #f8fafc;
+}
+
+.theme-light .ot-mem-card {
+  border-color: rgba(15, 23, 42, 0.07);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 253, 0.9));
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 1) inset,
+    0 12px 26px -22px rgba(15, 23, 42, 0.5);
+}
+
+.theme-light .ot-mem-card:hover {
+  border-color: rgba(15, 23, 42, 0.12);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 1) inset,
+    0 22px 40px -26px rgba(15, 23, 42, 0.4);
+}
+
+.theme-light .ot-mem-card::after {
+  background: linear-gradient(115deg, transparent 34%, rgba(255, 255, 255, 0.55) 48%, transparent 60%);
+}
+
+.theme-light .ot-mem-card-foot {
+  border-top-color: rgba(15, 23, 42, 0.05);
+}
+
+.theme-light .ot-mem-detail {
+  border-left-color: rgba(15, 23, 42, 0.07);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(246, 249, 255, 0.95));
+  backdrop-filter: blur(30px) saturate(150%);
+  -webkit-backdrop-filter: blur(30px) saturate(150%);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 1) inset,
+    -40px 0 80px -54px rgba(15, 23, 42, 0.35);
+}
+
+.theme-light .ot-mem-detail-body {
+  color: #334155;
+}
+
+.theme-light .ot-mem-detail-meta,
+.theme-light .ot-mem-list-item {
+  background: rgba(255, 255, 255, 0.8);
+  border-color: rgba(15, 23, 42, 0.07);
+}
+
+.theme-light .ot-mem-tab.is-active .ot-mem-tab-badge {
+  background: rgba(15, 23, 42, 0.1);
+}
+
+/* ---------- ajustes de desempenho e movimento ---------- */
+
+@media (max-width: 720px) {
+  .ot-mem-panel {
+    backdrop-filter: blur(26px) saturate(170%);
+    -webkit-backdrop-filter: blur(26px) saturate(170%);
+  }
+
+  .ot-mem-tabs {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .ot-mem-tab span:not(.ot-mem-tab-badge) {
+    font-size: 11px;
+  }
+
+  .ot-mem-ambient-blob {
+    animation-duration: 42s;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ot-mem-ambient-blob,
+  .ot-mem-tabs-indicator,
+  .ot-mem-detail,
+  .ot-mem-card::after {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .ot-mem-card:hover {
+    transform: none;
+  }
+}
+
+/* Sem suporte a backdrop-filter: vidro vira superfície sólida (nunca ilegível) */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .ot-mem-panel {
+    background: linear-gradient(168deg, #1a1f2b 0%, #12151d 45%, #0a0c11 100%);
+  }
+
+  .ot-mem-detail {
+    background: #10141c;
+  }
+
+  .theme-light .ot-mem-panel {
+    background: linear-gradient(165deg, #ffffff 0%, #f6f9ff 50%, #eef3fd 100%);
+  }
+
+  .theme-light .ot-mem-detail {
+    background: #ffffff;
+  }
+
+  .ot-mem-ambient {
+    opacity: 0.55;
+  }
+}
