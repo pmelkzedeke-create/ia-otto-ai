@@ -1,0 +1,437 @@
+// Centralized Groq Service for Llama & Open-Source LLM Integration
+// Provider: GroqCloud
+// API Endpoint: https://api.groq.com/openai/v1
+// Model Default: llama-3.3-70b-versatile
+
+import dotenv from 'dotenv';
+import { buildDynamicSystemPrompt } from './systemPrompt.js';
+
+dotenv.config();
+
+export interface GroqMessage {
+  role: 'system' | 'user' | 'assistant' | 'tool';
+  content?: string | null;
+  name?: string;
+  tool_call_id?: string;
+  tool_calls?: GroqToolCall[];
+}
+
+export interface GroqToolCall {
+  id: string;
+  type: 'function';
+  function: {
+    name: string;
+    arguments: string;
+  };
+}
+
+export interface GroqToolDefinition {
+  type: 'function';
+  function: {
+    name: string;
+    description: string;
+    parameters: Record<string, any>;
+  };
+}
+
+export interface GroqChatOptions {
+  messages: GroqMessage[];
+  model?: string;
+  temperature?: number;
+  maxTokens?: number;
+  tools?: GroqToolDefinition[];
+  tool_choice?: 'auto' | 'none' | 'required';
+}
+
+export interface GroqChatResponse {
+  content: string;
+  toolCalls?: GroqToolCall[];
+  model: string;
+  finishReason?: string;
+  usage?: {
+    prompt_tokens: number;
+    completion_tokens: number;
+    total_tokens: number;
+  };
+}
+
+// Available tools schema for Groq tool calling
+export const AVAILABLE_GROQ_TOOLS: GroqToolDefinition[] = [
+  {
+    type: 'function',
+    function: {
+      name: 'search_web',
+      description: 'Realiza uma pesquisa na internet por informações atualizadas, notícias ou conhecimentos específicos.',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: {
+            type: 'string',
+            description: 'A consulta de pesquisa para buscar na internet.',
+          },
+          engine: {
+            type: 'string',
+            enum: ['google', 'youtube', 'duckduckgo'],
+            description: 'O mecanismo de busca a ser utilizado.',
+          },
+        },
+        required: ['query'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'calculator',
+      description: 'Executa cálculos matemáticos ou avalia expressões numéricas com precisão.',
+      parameters: {
+        type: 'object',
+        properties: {
+          expression: {
+            type: 'string',
+            description: 'Expressão matemática a ser calculada (ex: "25 * 14 + sqrt(144)").',
+          },
+        },
+        required: ['expression'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'read_file',
+      description: 'Lê o conteúdo de um arquivo existente no espaço de trabalho do computador.',
+      parameters: {
+        type: 'object',
+        properties: {
+          filename: {
+            type: 'string',
+            description: 'Nome ou caminho relativo do arquivo no workspace.',
+          },
+        },
+        required: ['filename'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'write_file',
+      description: 'Cria ou sobrescreve um arquivo no espaço de trabalho com o conteúdo especificado.',
+      parameters: {
+        type: 'object',
+        properties: {
+          filename: {
+            type: 'string',
+            description: 'Nome ou caminho relativo do arquivo.',
+          },
+          content: {
+            type: 'string',
+            description: 'Conteúdo textual do arquivo.',
+          },
+        },
+        required: ['filename', 'content'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'create_folder',
+      description: 'Cria um novo diretório/pasta no espaço de trabalho.',
+      parameters: {
+        type: 'object',
+        properties: {
+          name: {
+            type: 'string',
+            description: 'Nome ou caminho relativo do diretório a criar.',
+          },
+        },
+        required: ['name'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'execute_command',
+      description: 'Executa um comando no terminal do computador de forma segura.',
+      parameters: {
+        type: 'object',
+        properties: {
+          command: {
+            type: 'string',
+            description: 'O comando do terminal a ser executado.',
+          },
+        },
+        required: ['command'],
+      },
+    },
+  },
+];
+
+export class GroqService {
+  private static get GROQ_ENDPOINT(): string {
+    return 'https://api.groq.com/openai/v1/chat/completions';
+  }
+
+  private static CANDIDATE_MODELS = [
+    'llama-3.3-70b-versatile',
+    'llama-3.1-8b-instant',
+  ];
+
+  private static groqCooldownUntil = 0;
+
+  public static resolveModel(modelInput?: string): string {
+    const raw = modelInput || process.env.AI_MODEL || 'llama-3.3-70b-versatile';
+    if (!raw || typeof raw !== 'string' || raw.startsWith('gsk_') || raw.includes('gpt-oss')) {
+      return 'llama-3.3-70b-versatile';
+    }
+    return raw.trim();
+  }
+
+  public static get DEFAULT_MODEL(): string {
+    return this.resolveModel(process.env.AI_MODEL);
+  }
+
+  public static get API_KEY(): string {
+    return process.env.GROQ_API_KEY || '';
+  }
+
+  /**
+   * Manages conversation context size by trimming history while preserving system instructions.
+   */
+  public static manageContext(messages: GroqMessage[], maxMessages = 12): GroqMessage[] {
+    if (!messages || messages.length === 0) return [];
+
+    const systemMessages = messages.filter((m) => m.role === 'system');
+    const nonSystemMessages = messages.filter((m) => m.role !== 'system');
+
+    if (nonSystemMessages.length <= maxMessages) {
+      return messages;
+    }
+
+    // Keep the last maxMessages non-system messages
+    const trimmed = nonSystemMessages.slice(-maxMessages);
+    return [...systemMessages, ...trimmed];
+  }
+
+  /**
+   * Sends a structured chat completion request to Groq API with candidate model fallbacks.
+   */
+  public static async sendMessage(options: GroqChatOptions): Promise<GroqChatResponse> {
+    const apiKey = this.API_KEY;
+    if (!apiKey) {
+      throw new Error('GROQ_API_KEY_MISSING: Chave de API do Groq não configurada no servidor.');
+    }
+
+    if (Date.now() < this.groqCooldownUntil) {
+      throw new Error('GROQ_COOLDOWN: Groq temporariamente indisponível.');
+    }
+
+    const requestedModel = this.resolveModel(options.model);
+    const modelsToTry = Array.from(new Set([requestedModel, ...this.CANDIDATE_MODELS]));
+    const managedMessages = this.manageContext(options.messages);
+
+    for (const model of modelsToTry) {
+      const payload: any = {
+        model,
+        messages: managedMessages,
+        temperature: options.temperature ?? 0.3,
+      };
+
+      if (options.maxTokens) {
+        payload.max_tokens = options.maxTokens;
+      }
+
+      if (options.tools && options.tools.length > 0) {
+        payload.tools = options.tools;
+        payload.tool_choice = options.tool_choice || 'auto';
+      }
+
+      try {
+        const response = await fetch(this.GROQ_ENDPOINT, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text().catch(() => '');
+
+          if (response.status === 404 || errorText.includes('model_not_found')) {
+            // Model not found on this account/key, try next candidate model
+            continue;
+          }
+
+          if (response.status === 401) {
+            this.groqCooldownUntil = Date.now() + 10 * 60 * 1000;
+            throw new Error('GROQ_API_KEY_INVALID: A API Key do Groq é inválida ou expirou.');
+          } else if (response.status === 429) {
+            this.groqCooldownUntil = Date.now() + 2 * 60 * 1000;
+            throw new Error('GROQ_RATE_LIMIT: Limite de requisições da API Groq excedido.');
+          } else if (response.status === 400 && errorText.includes('context_length_exceeded')) {
+            if (managedMessages.length > 3) {
+              return this.sendMessage({
+                ...options,
+                messages: this.manageContext(managedMessages, 6),
+              });
+            }
+            throw new Error('GROQ_CONTEXT_TOO_LARGE: O contexto da conversa é muito grande.');
+          } else {
+            throw new Error(`GROQ_API_ERROR: Erro na API do Groq (${response.status}). ${errorText.slice(0, 100)}`);
+          }
+        }
+
+        const data: any = await response.json();
+        const choice = data.choices?.[0];
+
+        if (!choice) {
+          throw new Error('GROQ_EMPTY_RESPONSE: O modelo Groq retornou uma resposta vazia.');
+        }
+
+        const message = choice.message || {};
+        const content = message.content || '';
+        const toolCalls = message.tool_calls || undefined;
+
+        return {
+          content,
+          toolCalls,
+          model: data.model || model,
+          finishReason: choice.finish_reason,
+          usage: data.usage,
+        };
+      } catch (err: any) {
+        if (err?.message?.startsWith('GROQ_') && !err?.message?.includes('404')) {
+          throw err;
+        }
+      }
+    }
+
+    // All candidate models failed with 404 or model_not_found
+    this.groqCooldownUntil = Date.now() + 5 * 60 * 1000; // 5 minute cooldown
+    throw new Error('GROQ_MODELS_UNAVAILABLE: Nenhum modelo acessível na chave de API do Groq.');
+  }
+
+  /**
+   * Streams chat completion tokens from Groq API via SSE callback.
+   */
+  public static async streamMessage(
+    options: GroqChatOptions,
+    callbacks: {
+      onToken: (token: string) => void;
+      onToolCall?: (toolCalls: GroqToolCall[]) => void;
+      onError: (err: Error) => void;
+      onComplete: (fullContent: string) => void;
+    }
+  ): Promise<void> {
+    const apiKey = this.API_KEY;
+    if (!apiKey) {
+      callbacks.onError(new Error('GROQ_API_KEY_MISSING: Chave de API do Groq não configurada.'));
+      return;
+    }
+
+    const model = this.resolveModel(options.model);
+    const managedMessages = this.manageContext(options.messages);
+
+    const payload: any = {
+      model,
+      messages: managedMessages,
+      temperature: options.temperature ?? 0.3,
+      stream: true,
+    };
+
+    if (options.tools && options.tools.length > 0) {
+      payload.tools = options.tools;
+      payload.tool_choice = options.tool_choice || 'auto';
+    }
+
+    try {
+      const response = await fetch(this.GROQ_ENDPOINT, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => '');
+        if (response.status === 401) {
+          throw new Error('GROQ_API_KEY_INVALID: A API Key do Groq é inválida.');
+        } else if (response.status === 429) {
+          throw new Error('GROQ_RATE_LIMIT: Limite de requisições excedido no Groq.');
+        }
+        throw new Error(`GROQ_STREAM_ERROR: Erro no streaming (${response.status}) ${errorText.slice(0, 100)}`);
+      }
+
+      if (!response.body) {
+        throw new Error('GROQ_NO_STREAM_BODY: Corpo da resposta de streaming indisponível.');
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+      let fullContent = '';
+      let buffer = '';
+      let accumulatedToolCalls: any[] = [];
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed || trimmed.startsWith(':')) continue;
+          if (trimmed === 'data: [DONE]') break;
+
+          if (trimmed.startsWith('data: ')) {
+            try {
+              const json = JSON.parse(trimmed.slice(6));
+              const delta = json.choices?.[0]?.delta;
+
+              if (delta?.content) {
+                fullContent += delta.content;
+                callbacks.onToken(delta.content);
+              }
+
+              if (delta?.tool_calls) {
+                for (const tc of delta.tool_calls) {
+                  const idx = tc.index ?? 0;
+                  if (!accumulatedToolCalls[idx]) {
+                    accumulatedToolCalls[idx] = {
+                      id: tc.id || `call_${Date.now()}`,
+                      type: 'function',
+                      function: { name: tc.function?.name || '', arguments: '' },
+                    };
+                  }
+                  if (tc.function?.name) {
+                    accumulatedToolCalls[idx].function.name = tc.function.name;
+                  }
+                  if (tc.function?.arguments) {
+                    accumulatedToolCalls[idx].function.arguments += tc.function.arguments;
+                  }
+                }
+              }
+            } catch {}
+          }
+        }
+      }
+
+      if (accumulatedToolCalls.length > 0 && callbacks.onToolCall) {
+        callbacks.onToolCall(accumulatedToolCalls);
+      }
+
+      callbacks.onComplete(fullContent);
+    } catch (err: any) {
+      callbacks.onError(err instanceof Error ? err : new Error(String(err)));
+    }
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "name": "cpf-validator",
+  "version": "1.0.0",
+  "description": "Validador de CPF com testes unitários em Jest",
+  "main": "src/cpfValidator.js",
+  "scripts": {
+    "test": "jest --coverage"
+  },
+  "keywords": [
+    "cpf",
+    "validator",
+    "brasil"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "jest": "^29.7.0"
+  }
+}
