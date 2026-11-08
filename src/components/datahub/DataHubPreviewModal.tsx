@@ -268,8 +268,8 @@ export const DataHubPreviewModal: React.FC<DataHubPreviewModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-black/85 backdrop-blur-2xl animate-fade-in font-sans">
-      <div className="relative w-full max-w-5xl rounded-[28px] glass-medium border border-white/20 shadow-[0_30px_90px_rgba(0,0,0,0.95)] overflow-hidden flex flex-col max-h-[94vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-black/85 backdrop-blur-2xl dh-backdrop font-sans">
+      <div className="relative w-full max-w-5xl rounded-[28px] glass-medium border border-white/20 shadow-[0_30px_90px_rgba(0,0,0,0.95)] overflow-hidden flex flex-col max-h-[94vh] dh-panel">
         {/* Modal Top Header */}
         <div className="p-3.5 sm:p-4.5 border-b border-white/10 flex items-center justify-between bg-white/[0.04] gap-3">
           <div className="flex items-center gap-3 min-w-0">

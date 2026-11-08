@@ -41,7 +41,7 @@ import { OttoImageCard } from './OttoImageCard';
 import { OttoImageGallery } from './OttoImageGallery';
 import { DraggableWindow } from './DraggableWindow';
 import { OttoHologram, OttoHologramContent } from './hologram';
-import { DataHubChatCard } from './datahub';
+import { DataHubChatCard } from './datahub/DataHubChatCard';
 import { DataHubStorage } from '../services/dataHubStorage';
 import { OttoThinking, OttoTyping } from './OttoAnimation';
 import { ttsEngine } from '../services/ttsEngine';
