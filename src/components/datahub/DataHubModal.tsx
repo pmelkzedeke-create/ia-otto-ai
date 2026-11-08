@@ -25,6 +25,9 @@ import {
   Music,
   ArrowUpDown,
   Clock,
+  LayoutGrid,
+  List,
+  CheckCircle2,
 } from 'lucide-react';
 import { OttoFile, OttoFolder, FileCategory } from '../../types/dataHub';
 import { DataHubStorage } from '../../services/dataHubStorage';
@@ -70,6 +73,42 @@ function formatDate(iso?: string): string {
   return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
 }
 
+/** Número que "conta" até o valor final (respeita prefers-reduced-motion). */
+const AnimatedNumber: React.FC<{ value: number; format?: (n: number) => string; duration?: number }> = ({
+  value,
+  format = (n) => Math.round(n).toString(),
+  duration = 900,
+}) => {
+  const [display, setDisplay] = useState(0);
+
+  useEffect(() => {
+    const reduceMotion =
+      typeof window !== 'undefined' &&
+      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+
+    if (reduceMotion || duration <= 0) {
+      setDisplay(value);
+      return;
+    }
+
+    let frame = 0;
+    const start = performance.now();
+    const from = 0;
+
+    const tick = (now: number) => {
+      const progress = Math.min(1, (now - start) / duration);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setDisplay(from + (value - from) * eased);
+      if (progress < 1) frame = requestAnimationFrame(tick);
+    };
+
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [value, duration]);
+
+  return <>{format(display)}</>;
+};
+
 function FileIcon({ category }: { category: FileCategory }) {
   if (category === 'video') return <Film className="w-4 h-4 text-white" />;
   if (category === 'audio') return <Music className="w-4 h-4 text-white" />;
@@ -89,6 +128,8 @@ export const DataHubModal: React.FC<DataHubModalProps> = ({
   const [selectedFileIds, setSelectedFileIds] = useState<Set<string>>(new Set());
   const [selectedCategory, setSelectedCategory] = useState<FileCategory | 'all'>('all');
   const [sortBy, setSortBy] = useState<SortMode>('recent');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [toast, setToast] = useState<{ count: number; label: string } | null>(null);
 
   const [files, setFiles] = useState<OttoFile[]>([]);
   const [folders, setFolders] = useState<OttoFolder[]>([]);
@@ -108,6 +149,15 @@ export const DataHubModal: React.FC<DataHubModalProps> = ({
   const [isClosing, setIsClosing] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
+  const toastTimer = useRef<number | null>(null);
+
+  const showToast = useCallback((count: number, label: string) => {
+    if (count <= 0) return;
+    setToast({ count, label });
+    if (toastTimer.current) window.clearTimeout(toastTimer.current);
+    toastTimer.current = window.setTimeout(() => setToast(null), 3500);
+  }, []);
 
   // Sync data from DataHubStorage
   const refresh = useCallback(() => {
@@ -173,6 +223,23 @@ export const DataHubModal: React.FC<DataHubModalProps> = ({
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [isRendered, previewFile, showNewFolderInput, onClose]);
 
+  // Atalho "/" foca a busca (ignora quando o usuário está digitando em algum campo)
+  useEffect(() => {
+    if (!isRendered) return;
+    const onKey = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      const isTyping =
+        !!target &&
+        (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable);
+      if (event.key === '/' && !isTyping) {
+        event.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isRendered]);
+
   const breadcrumbs = useMemo(
     () => (isRendered ? DataHubStorage.getFolderBreadcrumbs(currentFolderId) : []),
     [currentFolderId, isRendered]
@@ -223,8 +290,10 @@ export const DataHubModal: React.FC<DataHubModalProps> = ({
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      await DataHubStorage.uploadFiles(Array.from(e.target.files), currentFolderId);
+      const uploaded = await DataHubStorage.uploadFiles(Array.from(e.target.files), currentFolderId);
       refresh();
+      showToast(uploaded?.length ?? e.target.files.length, 'arquivo(s) indexado(s) no Data Hub');
+      e.target.value = '';
     }
   };
 
@@ -232,8 +301,9 @@ export const DataHubModal: React.FC<DataHubModalProps> = ({
     e.preventDefault();
     setIsDragOver(false);
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      await DataHubStorage.uploadFiles(Array.from(e.dataTransfer.files), currentFolderId);
+      const uploaded = await DataHubStorage.uploadFiles(Array.from(e.dataTransfer.files), currentFolderId);
       refresh();
+      showToast(uploaded?.length ?? e.dataTransfer.files.length, 'arquivo(s) recebido(s) por arrastar-e-soltar');
     }
   };
 
@@ -451,7 +521,9 @@ export const DataHubModal: React.FC<DataHubModalProps> = ({
                     </span>
                   </div>
 
-                  <span className="text-white font-bold text-sm">{formatBytes(totalStorageSize)}</span>
+                  <span className="text-white font-bold text-sm">
+                    <AnimatedNumber value={totalStorageSize} format={formatBytes} />
+                  </span>
 
                   <div className="h-1.5 w-full rounded-full bg-white/10 overflow-hidden">
                     <div
@@ -462,7 +534,7 @@ export const DataHubModal: React.FC<DataHubModalProps> = ({
 
                   <span className="text-[11px] text-slate-300 flex items-center gap-1.5">
                     <HardDrive className="w-3 h-3" />
-                    {allFiles.length} arquivos indexados · {allFolders.length} pastas
+                    <AnimatedNumber value={allFiles.length} /> arquivos · <AnimatedNumber value={allFolders.length} /> pastas
                   </span>
                 </div>
               </div>
@@ -506,10 +578,11 @@ export const DataHubModal: React.FC<DataHubModalProps> = ({
                     <div className="relative flex-1 sm:w-60 group">
                       <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-white" />
                       <input
+                        ref={searchInputRef}
                         type="text"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Busca semântica e conteúdo..."
+                        placeholder="Busca semântica (atalho: /)"
                         aria-label="Buscar arquivos"
                         className="w-full pl-8 pr-8 py-1.5 rounded-xl bg-white/[0.08] border border-white/15 text-xs text-white placeholder:text-slate-400 focus:outline-none focus:border-white focus:bg-white/[0.12] transition-all font-sans"
                       />
@@ -522,6 +595,36 @@ export const DataHubModal: React.FC<DataHubModalProps> = ({
                           <X className="w-3 h-3" />
                         </button>
                       )}
+                    </div>
+
+                    {/* Alternância Grade / Lista */}
+                    <div className="hidden sm:flex items-center gap-0.5 p-0.5 rounded-xl bg-white/[0.06] border border-white/15">
+                      <button
+                        onClick={() => setViewMode('grid')}
+                        aria-label="Visualizar em grade"
+                        aria-pressed={viewMode === 'grid'}
+                        title="Grade"
+                        className={`p-1.5 rounded-lg transition-all cursor-pointer active:scale-90 ${
+                          viewMode === 'grid'
+                            ? 'bg-white text-slate-950 shadow-sm'
+                            : 'text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        <LayoutGrid className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => setViewMode('list')}
+                        aria-label="Visualizar em lista"
+                        aria-pressed={viewMode === 'list'}
+                        title="Lista"
+                        className={`p-1.5 rounded-lg transition-all cursor-pointer active:scale-90 ${
+                          viewMode === 'list'
+                            ? 'bg-white text-slate-950 shadow-sm'
+                            : 'text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        <List className="w-3.5 h-3.5" />
+                      </button>
                     </div>
 
                     {/* Ordenação */}
@@ -620,7 +723,10 @@ export const DataHubModal: React.FC<DataHubModalProps> = ({
                 )}
 
                 {/* Files & Folders Grid Area */}
-                <div className="flex-1 p-4 sm:p-5 overflow-y-auto flex flex-col gap-4">
+                <div
+                  key={`${currentFolderId ?? 'root'}-${viewMode}`}
+                  className="dh-page-in flex-1 p-4 sm:p-5 overflow-y-auto flex flex-col gap-4"
+                >
                   {/* Folders Row */}
                   {folders.length > 0 && !searchQuery && (
                     <div className="flex flex-col gap-2">
@@ -706,7 +812,13 @@ export const DataHubModal: React.FC<DataHubModalProps> = ({
                         )}
                       </div>
                     ) : (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                      <div
+                        className={
+                          viewMode === 'grid'
+                            ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5'
+                            : 'flex flex-col gap-2'
+                        }
+                      >
                         {filteredFiles.map((file, index) => {
                           const isSelected = selectedFileIds.has(file.id);
                           return (
@@ -717,7 +829,11 @@ export const DataHubModal: React.FC<DataHubModalProps> = ({
                             >
                               <div
                                 onClick={() => setPreviewFile(file)}
-                                className={`dh-card p-3.5 rounded-2xl border cursor-pointer flex flex-col justify-between gap-3 group relative h-full ${
+                                className={`dh-card p-3.5 rounded-2xl border cursor-pointer flex group relative h-full ${
+                                  viewMode === 'list'
+                                    ? 'flex-row items-center justify-between gap-4'
+                                    : 'flex-col justify-between gap-3'
+                                } ${
                                   isSelected
                                     ? 'bg-white/20 border-white shadow-[0_0_20px_rgba(255,255,255,0.35)]'
                                     : 'bg-white/[0.04] hover:bg-white/[0.08] border-white/10 hover:border-white/30 shadow-sm'
@@ -753,7 +869,13 @@ export const DataHubModal: React.FC<DataHubModalProps> = ({
                                 </div>
 
                                 {/* Tags or Status Footer */}
-                                <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 pt-1.5 border-t border-white/[0.06]">
+                                <div
+                                  className={`flex items-center justify-between text-[10px] font-mono text-slate-400 ${
+                                    viewMode === 'list'
+                                      ? 'gap-4 shrink-0 whitespace-nowrap'
+                                      : 'pt-1.5 border-t border-white/[0.06]'
+                                  }`}
+                                >
                                   <span className="uppercase font-bold text-slate-300">{file.category}</span>
 
                                   {file.metadata?.isDuplicate ? (
@@ -791,6 +913,26 @@ export const DataHubModal: React.FC<DataHubModalProps> = ({
               </div>
             </div>
           </div>
+
+          {/* Toast de upload */}
+          {toast && (
+            <div className="dh-toast absolute bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 w-[calc(100%-2rem)] sm:w-80 rounded-2xl bg-[#0b1220]/95 backdrop-blur-xl border border-emerald-400/30 shadow-[0_18px_50px_rgba(0,0,0,0.7)] overflow-hidden pointer-events-none">
+              <div className="flex items-start gap-2.5 p-3.5">
+                <CheckCircle2 className="dh-icon-pop w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-white">
+                    {toast.count} {toast.label}
+                  </p>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    Já disponíveis para o OTTO analisar
+                  </p>
+                </div>
+              </div>
+              <div className="h-0.5 bg-emerald-400/20">
+                <div className="dh-toast__bar h-full w-full bg-emerald-400" />
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
