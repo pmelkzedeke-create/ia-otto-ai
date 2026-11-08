@@ -42,6 +42,10 @@ if (!fs.existsSync(WORKSPACE_DIR)) {
 // Token de sessão: OTTO_ACCESS_TOKEN ou gerado/persistido em otto_workspace/.otto_token
 const SESSION_TOKEN = initSessionToken(WORKSPACE_DIR);
 
+// Identificador deste boot: o frontend usa isso para se recarregar sozinho
+// sempre que o servidor reiniciar (evita ficar preso numa versão antiga em cache).
+const BUILD_ID = Date.now().toString(36);
+
 // O token precisa existir antes do Vite carregar o config (injeção da meta tag).
 app.use(securityHeaders);
 app.use(apiRateLimit);
@@ -2522,6 +2526,11 @@ function injectSessionToken(html: string): string {
   const meta = `<meta name="otto-token" content="${SESSION_TOKEN}" />`;
   return html.includes('name="otto-token"') ? html : html.replace('</head>', `  ${meta}\n</head>`);
 }
+
+app.get('/__otto/live', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  res.json({ buildId: BUILD_ID, pid: process.pid, startedAt: new Date().toISOString() });
+});
 
 async function startServer() {
   app.use(notFoundApiHandler);
