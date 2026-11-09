@@ -1,4 +1,5 @@
 import express from 'express';
+import http from 'http';
 import path from 'path';
 import fs from 'fs';
 import os from 'os';
@@ -10,6 +11,12 @@ import { GroqService, AVAILABLE_GROQ_TOOLS, GroqMessage } from './server/groqSer
 import { executeGroqTool } from './server/toolExecutor.js';
 import { buildDynamicSystemPrompt } from './server/systemPrompt.js';
 import { TextCodeProvider } from './server/textCodeProvider.js';
+import {
+  safeFetch,
+  readBodyWithLimit,
+  UnsafeUrlError,
+  PayloadTooLargeError,
+} from './server/urlGuard.js';
 import { CodeSandbox } from './server/codeSandbox.js';
 import { AgentOrchestrator, TaskState } from './server/agentOrchestrator.js';
 import { TaskRouter, RouteDecision } from './server/taskRouter.js';
@@ -20,19 +27,56 @@ import { sandboxRouter } from './server/routes/sandbox.js';
 import { agentRouter } from './server/routes/agent.js';
 import { filesRouter } from './server/routes/files.js';
 import { slidesRouter } from './server/routes/slides.js';
-import { selectRelevantMemories } from './server/memoryStore.js';
+import { mediaRouter } from './server/routes/media.js';
+import { listMediaFiles } from './server/mediaTools.js';
+import { buildLocalReply } from './server/localBrain.js';
+import { loadProviderConfigOnBoot } from './server/providerConfig.js';
+import {
+  loadMemories,
+  saveMemories,
+  selectRelevantMemories,
+  autoLearnUserMemory,
+  getMemoryStats,
+  ServerMemoryItem,
+} from './server/memoryStore.js';
+import { initSessionToken, isUsingExplicitToken } from './server/session.js';
+import { securityHeaders, apiRateLimit, errorHandler, notFoundApiHandler } from './server/middleware/httpHardening.js';
 
 dotenv.config();
+
+// Configuração de provedor salva pela interface vence o .env (e sobrevive ao restart).
+loadProviderConfigOnBoot();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = Number(process.env.PORT || 3000);
 
-app.use(express.json({ limit: '20mb' }));
+// Workspace directory for safe, real file operations on this computer
+const WORKSPACE_DIR = path.resolve(__dirname, 'otto_workspace');
+if (!fs.existsSync(WORKSPACE_DIR)) {
+  fs.mkdirSync(WORKSPACE_DIR, { recursive: true });
+}
 
-// Middleware de Autenticação Central: Exige header x-otto-token para todas as rotas de API
+// Token de sessão: OTTO_ACCESS_TOKEN ou gerado/persistido em otto_workspace/.otto_token
+const SESSION_TOKEN = initSessionToken(WORKSPACE_DIR);
+
+// Identificador deste boot: o frontend usa isso para se recarregar sozinho
+// sempre que o servidor reiniciar (evita ficar preso numa versão antiga em cache).
+const BUILD_ID = Date.now().toString(36);
+
+// O token precisa existir antes do Vite carregar o config (injeção da meta tag).
+app.use(securityHeaders);
+app.use(apiRateLimit);
+// O upload de mídia tem corpo grande (base64 de vídeo): parser próprio na rota,
+// para não estourar o limite global de 20 MB do resto da API.
+app.use((req, res, next) => {
+  if (req.path === '/api/media/upload') return next();
+  return express.json({ limit: '20mb' })(req, res, next);
+});
+
+// Middleware de Autenticação Central: exige header x-otto-token em todas as rotas de API
 app.use(authMiddleware);
 
 // Montagem dos Roteadores Modulares
@@ -42,11 +86,9 @@ app.use(sandboxRouter);
 app.use(agentRouter);
 app.use(filesRouter);
 app.use(slidesRouter);
+app.use(mediaRouter);
 
-// Workspace directory for safe, real file operations on this computer
-const WORKSPACE_DIR = path.resolve(__dirname, 'otto_workspace');
-if (!fs.existsSync(WORKSPACE_DIR)) {
-  fs.mkdirSync(WORKSPACE_DIR, { recursive: true });
+if (!fs.existsSync(path.join(WORKSPACE_DIR, 'README.txt'))) {
   // Add a sample starter file and folder
   fs.writeFileSync(
     path.join(WORKSPACE_DIR, 'README.txt'),
@@ -64,122 +106,6 @@ if (!fs.existsSync(WORKSPACE_DIR)) {
   }
 }
 
-// Memory file storage with Planetary categorization
-const MEMORY_FILE = path.join(WORKSPACE_DIR, '.otto_memory.json');
-
-export interface ServerMemoryItem {
-  id: string;
-  key: string;
-  value: string;
-  title?: string;
-  category?: 'KNOWLEDGE' | 'LEARNED' | 'RESEARCH' | 'SYSTEM';
-  summary?: string;
-  tags?: string[];
-  color?: string;
-  createdAt: string;
-}
-
-function loadMemories(): ServerMemoryItem[] {
-  try {
-    if (fs.existsSync(MEMORY_FILE)) {
-      const data = fs.readFileSync(MEMORY_FILE, 'utf-8');
-      const parsed = JSON.parse(data);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
-      }
-    }
-  } catch (err) {
-    console.error('Error reading memory file:', err);
-  }
-
-  // Pre-seed celestial planetary memory nodes (Knowledge, Learned, Research, System)
-  const initialMemories: ServerMemoryItem[] = [
-    {
-      id: 'mem_1',
-      key: 'ia_video',
-      title: 'IAs que Geram Vídeo',
-      value: 'Principais ferramentas neurais de vídeo: Sora (OpenAI), Runway Gen-3, Kling AI, Luma Dream Machine e Pika Labs.',
-      category: 'LEARNED',
-      color: '#34d399',
-      tags: ['ia', 'video', 'neural', 'sora', 'runway', 'kling'],
-      createdAt: new Date().toISOString(),
-    },
-    {
-      id: 'mem_2',
-      key: 'projeto_principal',
-      title: 'Projeto OTTO Core',
-      value: 'Projeto central de inteligência e controle de computador localizado na pasta Projetos.',
-      category: 'LEARNED',
-      color: '#a78bfa',
-      tags: ['projeto', 'workspace', 'codigo'],
-      createdAt: new Date().toISOString(),
-    },
-    {
-      id: 'mem_3',
-      key: 'capacidades_sistema',
-      title: 'Arquitetura & Sistema',
-      value: 'Controle de volume, navegador Chrome, terminal de comandos e execução de ferramentas em disco.',
-      category: 'KNOWLEDGE',
-      color: '#38bdf8',
-      tags: ['sistema', 'controle', 'voz'],
-      createdAt: new Date().toISOString(),
-    },
-    {
-      id: 'mem_4',
-      key: 'pesquisa_ia_video',
-      title: 'Pesquisa: IA de Vídeo',
-      value: 'Pesquisa realizada sobre as melhores IAs geradoras de vídeo no Google.',
-      category: 'RESEARCH',
-      color: '#f43f5e',
-      tags: ['pesquisa', 'google', 'ia', 'video'],
-      createdAt: new Date().toISOString(),
-    },
-    {
-      id: 'mem_5',
-      key: 'pesquisa_neymar',
-      title: 'Pesquisa: Neymar Imagens',
-      value: 'Pesquisa de imagens realizada no Google Imagens.',
-      category: 'RESEARCH',
-      color: '#fbbf24',
-      tags: ['pesquisa', 'imagens', 'google'],
-      createdAt: new Date().toISOString(),
-    },
-    {
-      id: 'mem_6',
-      key: 'pesquisa_carros',
-      title: 'Pesquisa: Fotos de Carros',
-      value: 'Pesquisa sobre imagens de carros e tecnologia automotiva na web.',
-      category: 'RESEARCH',
-      color: '#fb923c',
-      tags: ['pesquisa', 'carros', 'google'],
-      createdAt: new Date().toISOString(),
-    },
-    {
-      id: 'mem_7',
-      key: 'navegador_padrao',
-      title: 'Navegador Padrão',
-      value: 'Sempre preferir abrir links e pesquisas no navegador integrado ou aba dedicada.',
-      category: 'SYSTEM',
-      color: '#e879f9',
-      tags: ['preferencia', 'browser'],
-      createdAt: new Date().toISOString(),
-    },
-  ];
-
-  try {
-    fs.writeFileSync(MEMORY_FILE, JSON.stringify(initialMemories, null, 2), 'utf-8');
-  } catch {}
-
-  return initialMemories;
-}
-
-function saveMemories(memories: ServerMemoryItem[]) {
-  try {
-    fs.writeFileSync(MEMORY_FILE, JSON.stringify(memories, null, 2), 'utf-8');
-  } catch (err) {
-    console.error('Error saving memory file:', err);
-  }
-}
 
 // Initialize Gemini client if GEMINI_API_KEY is present
 let geminiAi: GoogleGenAI | null = null;
@@ -199,30 +125,8 @@ if (process.env.GEMINI_API_KEY) {
 }
 
 // 1. Health & Config endpoint
-app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'online',
-    version: '2.5.0-futuristic',
-    providers: {
-      gemini: Boolean(process.env.GEMINI_API_KEY),
-      groq: Boolean(process.env.GROQ_API_KEY),
-      primaryModel: GroqService.DEFAULT_MODEL,
-    },
-    systemBridge: 'active',
-    workspacePath: WORKSPACE_DIR,
-  });
-});
 
 // 1.1 Dedicated Groq API Status & Configuration Endpoint
-app.get('/api/groq/status', (req, res) => {
-  res.json({
-    configured: Boolean(process.env.GROQ_API_KEY),
-    provider: process.env.AI_PROVIDER || 'groq',
-    model: GroqService.DEFAULT_MODEL,
-    endpoint: 'https://api.groq.com/openai/v1',
-    status: Boolean(process.env.GROQ_API_KEY) ? 'ready' : 'missing_api_key',
-  });
-});
 
 // 1.2 Dedicated Groq Chat Endpoint (Supports tool calls and context history)
 app.post('/api/groq/chat', async (req, res) => {
@@ -256,6 +160,8 @@ app.post('/api/groq/chat', async (req, res) => {
 
     let groqResult = await GroqService.sendMessage({
       messages,
+      tier: 'deep',
+      reasoningEffort: 'medium',
       tools: enableTools ? AVAILABLE_GROQ_TOOLS : undefined,
     });
 
@@ -287,6 +193,8 @@ app.post('/api/groq/chat', async (req, res) => {
 
       groqResult = await GroqService.sendMessage({
         messages,
+        tier: 'deep',
+        reasoningEffort: 'low',
       });
     }
 
@@ -303,6 +211,8 @@ app.post('/api/groq/chat', async (req, res) => {
     let userMsg = 'Ocorreu um erro ao comunicar com o modelo GPT-OSS 120B da Groq.';
     if (err?.message?.includes('GROQ_API_KEY_INVALID')) userMsg = 'Chave da API Groq inválida.';
     if (err?.message?.includes('GROQ_RATE_LIMIT')) userMsg = 'Limite de requisições do Groq atingido. Tente em alguns instantes.';
+    if (err?.message?.includes('GROQ_NETWORK_ERROR')) userMsg = 'Sem conexão com a Groq. Verifique a internet ou o proxy do servidor.';
+    if (err?.message?.includes('GROQ_MODELS_UNAVAILABLE')) userMsg = 'Sua chave da Groq não tem acesso aos modelos GPT-OSS 120B/20B.';
 
     return res.status(500).json({
       error: err?.message || 'Groq Chat error',
@@ -340,6 +250,8 @@ app.post('/api/groq/stream', async (req, res) => {
   await GroqService.streamMessage(
     {
       messages,
+      tier: 'deep',
+      reasoningEffort: 'low',
       tools: AVAILABLE_GROQ_TOOLS,
     },
     {
@@ -370,30 +282,10 @@ app.post('/api/groq/stream', async (req, res) => {
 // =========================================================================
 
 // Status & configuration of the specialized Text/Code API
-app.get('/api/text-code/status', (req, res) => {
-  res.json(TextCodeProvider.getStatus());
-});
 
 // Configure runtime credentials safely on the server side
-app.post('/api/text-code/config', (req, res) => {
-  const { apiKey, apiUrl, model } = req.body || {};
-  TextCodeProvider.setRuntimeConfig({ apiKey, apiUrl, model });
-  res.json({
-    success: true,
-    message: 'Configuração da API de Texto & Código (ROTA B) atualizada com sucesso no servidor.',
-    status: TextCodeProvider.getStatus(),
-  });
-});
 
 // Task Router check endpoint (detects if request belongs to ROTA A or ROTA B)
-app.post('/api/text-code/route-check', (req, res) => {
-  const { prompt } = req.body || {};
-  if (!prompt || typeof prompt !== 'string') {
-    return res.status(400).json({ error: 'Campo "prompt" obrigatório' });
-  }
-  const decision = TaskRouter.evaluate(prompt);
-  res.json(decision);
-});
 
 // Real HTTP call to the specialized Text/Code API
 app.post('/api/text-code/generate', async (req, res) => {
@@ -450,95 +342,10 @@ app.post('/api/text-code/stream', async (req, res) => {
 });
 
 // Real Code Sandbox Execution endpoint (Safe, isolated environment)
-app.post('/api/sandbox/execute', async (req, res) => {
-  try {
-    const { code, language, filename, timeoutMs, stdin } = req.body || {};
-    if (!code || typeof code !== 'string') {
-      return res.status(400).json({ error: 'Campo "code" obrigatório.' });
-    }
-    if (!language || typeof language !== 'string') {
-      return res.status(400).json({ error: 'Campo "language" obrigatório.' });
-    }
-
-    const result = await CodeSandbox.execute({
-      code,
-      language,
-      filename,
-      timeoutMs: timeoutMs || 15000,
-      stdin,
-    });
-
-    res.json(result);
-  } catch (err: any) {
-    res.status(500).json({
-      success: false,
-      error: err?.message || 'Erro ao executar código no sandbox',
-    });
-  }
-});
 
 // Real Multi-Agent Orchestrator endpoint with live SSE event streaming
-app.post('/api/agent/orchestrate', async (req, res) => {
-  const { prompt, options = {} } = req.body || {};
-  if (!prompt || typeof prompt !== 'string') {
-    return res.status(400).json({ error: 'Campo "prompt" obrigatório.' });
-  }
-
-  // Check if client requested SSE stream
-  const acceptHeader = req.headers.accept || '';
-  const isStream = acceptHeader.includes('text/event-stream') || req.query.stream === 'true';
-
-  if (isStream) {
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-
-    try {
-      const finalState = await AgentOrchestrator.executeTask(
-        prompt,
-        WORKSPACE_DIR,
-        (progress) => {
-          res.write(`data: ${JSON.stringify({ type: 'progress', ...progress })}\n\n`);
-        },
-        options
-      );
-
-      res.write(`data: ${JSON.stringify({ type: 'completed', taskState: finalState })}\n\n`);
-      res.end();
-    } catch (err: any) {
-      res.write(`data: ${JSON.stringify({ type: 'error', message: err.message || String(err) })}\n\n`);
-      res.end();
-    }
-  } else {
-    try {
-      const finalState = await AgentOrchestrator.executeTask(
-        prompt,
-        WORKSPACE_DIR,
-        undefined,
-        options
-      );
-      res.json({
-        success: true,
-        taskState: finalState,
-      });
-    } catch (err: any) {
-      res.status(500).json({
-        success: false,
-        error: err?.message || 'Falha na orquestração de agentes',
-      });
-    }
-  }
-});
 
 // Retrieve state of a running or completed task
-app.get('/api/agent/task/:taskId', (req, res) => {
-  const { taskId } = req.params;
-  const task = AgentOrchestrator.getTaskState(taskId);
-  if (!task) {
-    return res.status(404).json({ error: 'Tarefa não encontrada' });
-  }
-  res.json(task);
-});
 
 // Resilient Gemini Generator with automatic model fallback and quiet cooldown management
 const modelCooldowns = new Map<string, number>();
@@ -654,472 +461,20 @@ app.post('/api/transcribe-audio', async (req, res) => {
 });
 
 // 2. Real System Info endpoint (CPU, RAM, OS, Uptime)
-app.get('/api/system/info', (req, res) => {
-  try {
-    const cpus = os.cpus();
-    const totalMem = os.totalmem();
-    const freeMem = os.freemem();
-    const usedMem = totalMem - freeMem;
-    const memUsagePercent = Math.round((usedMem / totalMem) * 100);
-
-    // Approximate CPU load average
-    const loadAvg = os.loadavg();
-    const cpuUsagePercent = Math.min(
-      100,
-      Math.round((loadAvg[0] / Math.max(1, cpus.length)) * 100) || 28
-    );
-
-    res.json({
-      platform: os.platform(),
-      release: os.release(),
-      type: os.type(),
-      arch: os.arch(),
-      hostname: os.hostname(),
-      uptimeSeconds: os.uptime(),
-      cpuModel: cpus[0]?.model || 'Intel Core / AMD / ARM Processor',
-      cpuCores: cpus.length,
-      cpuUsagePercent,
-      totalMemoryBytes: totalMem,
-      freeMemoryBytes: freeMem,
-      usedMemoryBytes: usedMem,
-      memoryUsagePercent: memUsagePercent,
-      nodeVersion: process.version,
-      serverTime: new Date().toISOString(),
-    });
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to retrieve system status', details: String(err) });
-  }
-});
 
 // 3. File System Operations
-app.get('/api/fs/list', (req, res) => {
-  try {
-    const relativePath = (req.query.path as string) || '';
-    const targetDir = path.resolve(WORKSPACE_DIR, relativePath);
 
-    // Guard against path traversal outside WORKSPACE_DIR
-    if (!targetDir.startsWith(WORKSPACE_DIR)) {
-      return res.status(403).json({ error: 'Acesso negado: fora do diretório do workspace' });
-    }
 
-    if (!fs.existsSync(targetDir)) {
-      return res.status(404).json({ error: 'Diretório não encontrado' });
-    }
 
-    const items = fs.readdirSync(targetDir, { withFileTypes: true });
-    const formatted = items
-      .filter((item) => !item.name.startsWith('.'))
-      .map((item) => {
-        const itemPath = path.join(targetDir, item.name);
-        const stats = fs.statSync(itemPath);
-        return {
-          name: item.name,
-          path: path.relative(WORKSPACE_DIR, itemPath),
-          isDirectory: item.isDirectory(),
-          size: stats.size,
-          updatedAt: stats.mtime.toISOString(),
-        };
-      });
 
-    res.json({
-      currentPath: path.relative(WORKSPACE_DIR, targetDir),
-      items: formatted,
-    });
-  } catch (err) {
-    res.status(500).json({ error: 'Falha ao listar arquivos', details: String(err) });
-  }
-});
 
-app.post('/api/fs/create-folder', (req, res) => {
-  try {
-    const { name, targetPath = '' } = req.body;
-    if (!name || typeof name !== 'string') {
-      return res.status(400).json({ error: 'Nome da pasta obrigatório' });
-    }
 
-    // Sanitize folder name
-    const sanitized = name.replace(/[<>:"/\\|?*]/g, '').trim();
-    const fullPath = path.resolve(WORKSPACE_DIR, targetPath, sanitized);
-
-    if (!fullPath.startsWith(WORKSPACE_DIR)) {
-      return res.status(403).json({ error: 'Acesso proibido fora do workspace' });
-    }
-
-    if (fs.existsSync(fullPath)) {
-      return res.json({ success: true, message: `Pasta '${sanitized}' já existe`, path: path.relative(WORKSPACE_DIR, fullPath) });
-    }
-
-    fs.mkdirSync(fullPath, { recursive: true });
-    res.json({
-      success: true,
-      message: `Pasta '${sanitized}' criada com sucesso`,
-      path: path.relative(WORKSPACE_DIR, fullPath),
-    });
-  } catch (err) {
-    res.status(500).json({ error: 'Falha ao criar pasta', details: String(err) });
-  }
-});
-
-app.post('/api/fs/write-file', (req, res) => {
-  try {
-    const { filename, content = '', targetPath = '' } = req.body;
-    if (!filename || typeof filename !== 'string') {
-      return res.status(400).json({ error: 'Nome do arquivo obrigatório' });
-    }
-
-    const normalizedRelative = filename.replace(/\\/g, '/').replace(/^\/+/, '');
-    const fullPath = path.resolve(WORKSPACE_DIR, targetPath, normalizedRelative);
-
-    if (!fullPath.startsWith(WORKSPACE_DIR)) {
-      return res.status(403).json({ error: 'Acesso proibido fora do workspace' });
-    }
-
-    // Ensure parent directory exists
-    const dir = path.dirname(fullPath);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-
-    fs.writeFileSync(fullPath, content, 'utf-8');
-    res.json({
-      success: true,
-      message: `Arquivo '${normalizedRelative}' salvo com sucesso`,
-      path: path.relative(WORKSPACE_DIR, fullPath),
-      size: Buffer.byteLength(content, 'utf-8'),
-    });
-  } catch (err: any) {
-    res.status(500).json({ error: 'Falha ao escrever arquivo', details: String(err?.message || err) });
-  }
-});
-
-app.post('/api/fs/read-file', (req, res) => {
-  try {
-    const { filename, targetPath = '' } = req.body;
-    if (!filename) {
-      return res.status(400).json({ error: 'Nome do arquivo obrigatório' });
-    }
-
-    const normalizedRelative = filename.replace(/\\/g, '/').replace(/^\/+/, '');
-    const fullPath = path.resolve(WORKSPACE_DIR, targetPath, normalizedRelative);
-    if (!fullPath.startsWith(WORKSPACE_DIR)) {
-      return res.status(403).json({ error: 'Acesso proibido fora do workspace' });
-    }
-
-    if (!fs.existsSync(fullPath)) {
-      return res.status(404).json({ error: 'Arquivo não encontrado' });
-    }
-
-    const content = fs.readFileSync(fullPath, 'utf-8');
-    res.json({
-      success: true,
-      filename: normalizedRelative,
-      content,
-      size: fs.statSync(fullPath).size,
-    });
-  } catch (err: any) {
-    res.status(500).json({ error: 'Falha ao ler arquivo', details: String(err?.message || err) });
-  }
-});
-
-app.post('/api/fs/delete-file', (req, res) => {
-  try {
-    const { filename, targetPath = '' } = req.body;
-    if (!filename) {
-      return res.status(400).json({ error: 'Nome do arquivo ou pasta obrigatório' });
-    }
-
-    const fullPath = path.resolve(WORKSPACE_DIR, targetPath, filename);
-    if (!fullPath.startsWith(WORKSPACE_DIR)) {
-      return res.status(403).json({ error: 'Acesso proibido fora do workspace' });
-    }
-
-    if (!fs.existsSync(fullPath)) {
-      return res.status(404).json({ error: 'Item não encontrado para exclusão' });
-    }
-
-    const stat = fs.statSync(fullPath);
-    if (stat.isDirectory()) {
-      fs.rmSync(fullPath, { recursive: true, force: true });
-    } else {
-      fs.unlinkSync(fullPath);
-    }
-
-    res.json({
-      success: true,
-      message: `'${filename}' foi excluído permanentemente do computador`,
-    });
-  } catch (err) {
-    res.status(500).json({ error: 'Falha ao excluir item', details: String(err) });
-  }
-});
-
-app.post('/api/fs/rename', (req, res) => {
-  try {
-    const { oldName, newName, targetPath = '' } = req.body;
-    if (!oldName || !newName) {
-      return res.status(400).json({ error: 'Nome atual e novo nome são obrigatórios' });
-    }
-
-    const oldPath = path.resolve(WORKSPACE_DIR, targetPath, oldName);
-    const newPath = path.resolve(WORKSPACE_DIR, targetPath, newName);
-
-    if (!oldPath.startsWith(WORKSPACE_DIR) || !newPath.startsWith(WORKSPACE_DIR)) {
-      return res.status(403).json({ error: 'Acesso proibido fora do workspace' });
-    }
-
-    if (!fs.existsSync(oldPath)) {
-      return res.status(404).json({ error: 'Arquivo de origem não encontrado' });
-    }
-
-    fs.renameSync(oldPath, newPath);
-    res.json({
-      success: true,
-      message: `'${oldName}' renomeado para '${newName}'`,
-      path: path.relative(WORKSPACE_DIR, newPath),
-    });
-  } catch (err: any) {
-    res.status(500).json({ error: 'Falha ao renomear arquivo', details: err?.message || String(err) });
-  }
-});
-
-app.post('/api/fs/diff', (req, res) => {
-  try {
-    const { filename, targetPath = '', newContent } = req.body;
-    if (!filename) {
-      return res.status(400).json({ error: 'Nome do arquivo obrigatório' });
-    }
-
-    const fullPath = path.resolve(WORKSPACE_DIR, targetPath, filename);
-    if (!fullPath.startsWith(WORKSPACE_DIR)) {
-      return res.status(403).json({ error: 'Acesso proibido fora do workspace' });
-    }
-
-    let originalContent = '';
-    const fileExists = fs.existsSync(fullPath);
-    if (fileExists) {
-      originalContent = fs.readFileSync(fullPath, 'utf-8');
-    }
-
-    res.json({
-      success: true,
-      filename,
-      exists: fileExists,
-      originalContent,
-      newContent: newContent ?? originalContent,
-      hasChanges: fileExists && typeof newContent === 'string' ? originalContent !== newContent : false,
-    });
-  } catch (err: any) {
-    res.status(500).json({ error: 'Falha ao calcular diff', details: err?.message || String(err) });
-  }
-});
 
 // 4. Terminal Command Execution (Safe sandboxed)
-app.post('/api/terminal/execute', (req, res) => {
-  try {
-    const { command } = req.body;
-    if (!command || typeof command !== 'string') {
-      return res.status(400).json({ error: 'Comando ausente' });
-    }
-
-    const trimmed = command.trim();
-    // Disallow dangerous host commands
-    const forbidden = ['rm -rf /', 'mkfs', ':(){ :|:& };:', 'shutdown', 'reboot'];
-    if (forbidden.some((b) => trimmed.includes(b))) {
-      return res.status(403).json({
-        error: 'Comando de alto risco bloqueado pelas diretrizes de segurança do OTTO.',
-      });
-    }
-
-    exec(
-      trimmed,
-      {
-        cwd: WORKSPACE_DIR,
-        timeout: 10000,
-        maxBuffer: 1024 * 512,
-      },
-      (error, stdout, stderr) => {
-        res.json({
-          command: trimmed,
-          stdout: stdout || '',
-          stderr: stderr || '',
-          exitCode: error ? error.code || 1 : 0,
-          error: error ? error.message : null,
-        });
-      }
-    );
-  } catch (err) {
-    res.status(500).json({ error: 'Erro de execução no terminal', details: String(err) });
-  }
-});
 
 // 5. Memory Management
-app.get('/api/memory', (req, res) => {
-  const memories = loadMemories();
-  res.json({ memories });
-});
 
-app.post('/api/memory', (req, res) => {
-  const { key, value, title, category = 'LEARNED', tags, color, summary } = req.body;
-  if (!key || !value) {
-    return res.status(400).json({ error: 'Chave e valor necessários' });
-  }
 
-  const memories = loadMemories();
-  const existingIdx = memories.findIndex((m) => m.key.toLowerCase() === key.toLowerCase());
-
-  const categoryColors: Record<string, string> = {
-    KNOWLEDGE: '#38bdf8',
-    LEARNED: '#34d399',
-    RESEARCH: '#f43f5e',
-    SYSTEM: '#fbbf24',
-  };
-
-  const itemToSave: ServerMemoryItem = {
-    id: existingIdx >= 0 ? memories[existingIdx].id : `mem_${Date.now()}`,
-    key,
-    value,
-    title: title || key.replace(/_/g, ' ').toUpperCase(),
-    category,
-    tags: tags || [category.toLowerCase()],
-    color: color || categoryColors[category] || '#34d399',
-    summary: summary || value,
-    createdAt: new Date().toISOString(),
-  };
-
-  if (existingIdx >= 0) {
-    memories[existingIdx] = { ...memories[existingIdx], ...itemToSave };
-  } else {
-    memories.push(itemToSave);
-  }
-
-  saveMemories(memories);
-  res.json({ success: true, memories });
-});
-
-app.delete('/api/memory/:id', (req, res) => {
-  const { id } = req.params;
-  let memories = loadMemories();
-  memories = memories.filter((m) => m.id !== id);
-  saveMemories(memories);
-  res.json({ success: true, memories });
-});
-
-// Autonomous User Memory Learner (Learns conversational style, slangs, search topics, and system activity schedule)
-function autoLearnUserMemory(prompt: string, currentTime?: string) {
-  try {
-    const memories = loadMemories();
-    const p = prompt.toLowerCase().trim();
-    const timeStr = currentTime || new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-
-    // Real system telemetry & activity time
-    const uptimeSeconds = os.uptime();
-    const uptimeHours = (uptimeSeconds / 3600).toFixed(1);
-    const hour = parseInt(timeStr.split(':')[0], 10) || new Date().getHours();
-    const period =
-      hour >= 0 && hour < 6
-        ? 'Madrugada'
-        : hour >= 6 && hour < 12
-        ? 'Manhã'
-        : hour >= 12 && hour < 18
-        ? 'Tarde'
-        : 'Noite';
-
-    // 1. Detect conversational style and tone
-    const hasInformalSlang =
-      p.includes('tá ligado') ||
-      p.includes('ta ligado') ||
-      p.includes('bagulho') ||
-      p.includes('top') ||
-      p.includes('mano') ||
-      p.includes('cara') ||
-      p.includes('bora') ||
-      p.includes('show') ||
-      p.includes('manda ver') ||
-      p.includes('fala aí') ||
-      p.includes('fala ai') ||
-      p.includes('beleza') ||
-      p.includes('né');
-
-    const wantsRealExecution =
-      p.includes('de verdade') ||
-      p.includes('funcione de verdade') ||
-      p.includes('sem mentira') ||
-      p.includes('sem enrolação') ||
-      p.includes('direto');
-
-    if (hasInformalSlang || wantsRealExecution) {
-      const styleIdx = memories.findIndex((m) => m.key === 'estilo_conversa');
-      const styleDesc = wantsRealExecution
-        ? 'Comunicação autêntica, descontraída e com foco absoluto em execução real (gírias: "tá ligado", "bagulho", "top"). Exige ferramentas operando de verdade no computador, sem mockups ou simulações rasas.'
-        : 'Comunicação informal, autêntica e descontraída (gírias frequentes: "tá ligado", "bagulho", "top"). Prefere respostas objetivas, diretas e execução prática sem rodeios.';
-
-      const styleItem: ServerMemoryItem = {
-        id: styleIdx >= 0 ? memories[styleIdx].id : `mem_style_${Date.now()}`,
-        key: 'estilo_conversa',
-        title: 'Estilo de Conversa & Tom',
-        value: styleDesc,
-        category: 'LEARNED',
-        color: '#ffffff',
-        tags: ['estilo', 'personalidade', 'conversa', 'comunicacao', 'direto'],
-        summary: 'Preferência por tom informal, autenticidade e execução real imediata.',
-        createdAt: new Date().toISOString(),
-      };
-      if (styleIdx >= 0) memories[styleIdx] = styleItem;
-      else memories.unshift(styleItem);
-    }
-
-    // 2. Detect and register time routine from real system activity & uptime
-    const routineIdx = memories.findIndex((m) => m.key === 'rotina_horarios_sistema');
-    const routineItem: ServerMemoryItem = {
-      id: routineIdx >= 0 ? memories[routineIdx].id : `mem_routine_${Date.now()}`,
-      key: 'rotina_horarios_sistema',
-      title: 'Rotina & Atividade do Sistema',
-      value: `Atividade registrada no período da ${period} (horário local: ${timeStr}). Uptime do sistema operacional: ${uptimeHours} horas. O usuário interage com frequência neste horário para comandos diretos, pesquisas e geração autônoma.`,
-      category: 'SYSTEM',
-      color: '#e2e8f0',
-      tags: ['horario', 'atividade', 'sistema', 'rotina', 'telemetria'],
-      summary: `Pico de atividade na ${period} (${timeStr}) • Uptime: ${uptimeHours}h.`,
-      createdAt: new Date().toISOString(),
-    };
-    if (routineIdx >= 0) memories[routineIdx] = routineItem;
-    else memories.push(routineItem);
-
-    // 3. Detect searches and topics of interest
-    if (
-      p.includes('pesquise') ||
-      p.includes('procure') ||
-      p.includes('busca') ||
-      p.includes('tem ia') ||
-      p.includes('slide') ||
-      p.includes('site')
-    ) {
-      const topic = prompt
-        .replace(/(otto|pesquise|pesquisa|procure|busca|na web|na internet|no google|sobre|crie slides?|crie um slide|crie um site)\s*/gi, '')
-        .trim();
-      if (topic && topic.length > 2) {
-        const searchKey = `pesq_${topic.toLowerCase().replace(/[^a-z0-9]/g, '_').slice(0, 16)}`;
-        const existingIdx = memories.findIndex((m) => m.key === searchKey);
-        const searchItem: ServerMemoryItem = {
-          id: existingIdx >= 0 ? memories[existingIdx].id : `mem_${Date.now()}`,
-          key: searchKey,
-          title: `Interesse: ${topic.slice(0, 24)}`,
-          value: `Tópico explorado pelo usuário às ${timeStr} (${period}): "${topic}".`,
-          category: 'RESEARCH',
-          color: '#cbd5e1',
-          tags: ['pesquisa', 'interesse', 'web'],
-          summary: `Pesquisa solicitada: ${topic}`,
-          createdAt: new Date().toISOString(),
-        };
-        if (existingIdx >= 0) memories[existingIdx] = searchItem;
-        else memories.push(searchItem);
-      }
-    }
-
-    saveMemories(memories);
-  } catch (err) {
-    console.error('[autoLearnUserMemory] Warning:', err);
-  }
-}
 
 // Real Neural Slide & Presentation Generator using Real Gemini / Groq API with real disk persistence
 async function generateRealSlidesWithApi(userPrompt: string): Promise<{
@@ -1182,6 +537,9 @@ Gere exatamente de 4 a 6 slides detalhados e técnicos, sem informações genér
   if (generatedSlides.length === 0 && process.env.GROQ_API_KEY) {
     try {
       const groqRes = await GroqService.sendMessage({
+        tier: 'fast',
+        responseFormat: 'json',
+        temperature: 0.4,
         messages: [
           {
             role: 'system',
@@ -1544,122 +902,6 @@ function handleMainAction() {
 }
 
 // 5.2 Real Agent Step Execution Engine (Executes real system tools for agent steps)
-app.post('/api/agent/execute-step', (req, res) => {
-  try {
-    const { step, planTitle } = req.body || {};
-    if (!step || typeof step !== 'object') {
-      return res.status(400).json({ error: 'Etapa do agente inválida' });
-    }
-
-    const title = (step.title || '').toLowerCase();
-    const desc = (step.description || '').toLowerCase();
-    const act = step.action || {};
-    const actionName = act.action || 'none';
-    const params = act.parameters || {};
-    const target = act.target || params.filename || params.name || params.path || params.command || '';
-
-    // Case 1: Real Action = create_folder
-    if (actionName === 'create_folder' || title.includes('criar pasta') || title.includes('diretório') || desc.includes('criar a pasta')) {
-      const folderName = (params.name || target || title.match(/pasta "([^"]+)"/)?.[1] || title.match(/diretório "([^"]+)"/)?.[1] || 'projeto_agente').replace(/\\/g, '/');
-      const fullPath = path.resolve(WORKSPACE_DIR, folderName);
-      if (!fs.existsSync(fullPath)) {
-        fs.mkdirSync(fullPath, { recursive: true });
-      }
-      return res.json({
-        success: true,
-        executedTool: 'create_folder',
-        message: `Ferramenta Real [create_folder]: Pasta "${folderName}" criada no workspace (${fullPath}).`,
-        details: { folderName, fullPath },
-      });
-    }
-
-    // Case 2: Real Action = write_file
-    if (actionName === 'write_file' || title.includes('gerar código') || title.includes('escrever') || title.includes('criar arquivo') || desc.includes('index.html') || desc.includes('style.css') || desc.includes('script.js')) {
-      let filename = (params.filename || target || '').replace(/\\/g, '/').replace(/^\/+/, '');
-      if (!filename) {
-        if (title.includes('html') || desc.includes('html')) filename = 'index.html';
-        else if (title.includes('css') || desc.includes('css')) filename = 'style.css';
-        else if (title.includes('js') || title.includes('script') || desc.includes('js')) filename = 'script.js';
-        else filename = 'arquivo_agente.txt';
-      }
-
-      let content = params.content || '';
-      if (!content) {
-        const dynamic = buildDynamicWebsiteContent(planTitle || step.title);
-        if (filename.endsWith('.html') || filename.includes('html')) content = dynamic.html;
-        else if (filename.endsWith('.css') || filename.includes('css')) content = dynamic.css;
-        else if (filename.endsWith('.js') || filename.includes('js')) content = dynamic.js;
-        else content = `// Código gerado pela etapa real do OTTO: ${step.title}\n// Data: ${new Date().toISOString()}\n`;
-      }
-
-      const fullPath = path.resolve(WORKSPACE_DIR, filename);
-      const dir = path.dirname(fullPath);
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-      }
-
-      fs.writeFileSync(fullPath, content, 'utf-8');
-      const byteSize = Buffer.byteLength(content, 'utf-8');
-
-      return res.json({
-        success: true,
-        executedTool: 'write_file',
-        message: `Ferramenta Real [write_file]: Arquivo "${filename}" salvo com sucesso (${byteSize} bytes em disco).`,
-        details: { filename, fullPath, bytes: byteSize },
-      });
-    }
-
-    // Case 3: Real Action = list_files or audit
-    if (actionName === 'list_files' || title.includes('auditar') || title.includes('verificar') || title.includes('listar')) {
-      const folderPath = (params.path || target || '').replace(/\\/g, '/');
-      const targetDir = path.resolve(WORKSPACE_DIR, folderPath);
-
-      let items: string[] = [];
-      if (fs.existsSync(targetDir)) {
-        items = fs.readdirSync(targetDir);
-      } else {
-        items = fs.readdirSync(WORKSPACE_DIR);
-      }
-
-      return res.json({
-        success: true,
-        executedTool: 'list_files',
-        message: `Ferramenta Real [list_files]: Auditados ${items.length} arquivo(s) em disco: [${items.slice(0, 5).join(', ')}].`,
-        details: { items, path: folderPath },
-      });
-    }
-
-    // Case 4: Real Action = execute_command
-    if (actionName === 'execute_command' || title.includes('comando') || title.includes('executar') || title.includes('terminal')) {
-      const commandStr = params.command || target || 'ls -la';
-      const forbidden = ['rm -rf /', 'shutdown', 'reboot'];
-      if (forbidden.some((b) => commandStr.includes(b))) {
-        return res.status(403).json({ error: 'Comando de alto risco bloqueado.' });
-      }
-
-      return exec(commandStr, { cwd: WORKSPACE_DIR, timeout: 10000 }, (error, stdout, stderr) => {
-        return res.json({
-          success: !error,
-          executedTool: 'execute_command',
-          message: !error
-            ? `Ferramenta Real [terminal]: Comando "${commandStr}" executado com sucesso.`
-            : `Ferramenta Real [terminal]: Comando "${commandStr}" finalizado com aviso.`,
-          details: { command: commandStr, stdout: stdout?.trim() || '', stderr: stderr?.trim() || '' },
-        });
-      });
-    }
-
-    // Default Fallback: System Audit / Verify
-    return res.json({
-      success: true,
-      executedTool: 'system_verify',
-      message: `Ferramenta Real [system_verify]: Etapa "${step.title}" processada e verificada pelo ambiente do OTTO.`,
-      details: { stepId: step.id, timestamp: new Date().toISOString() },
-    });
-  } catch (err: any) {
-    res.status(500).json({ error: 'Falha na execução real da ferramenta do agente', details: String(err?.message || err) });
-  }
-});
 
 // 5.1 Project Scoped Memory & Context Management
 const PROJECTS_FILE = path.join(WORKSPACE_DIR, '.otto_projects.json');
@@ -1728,74 +970,14 @@ function saveProjects(projects: ServerProjectItem[]) {
   }
 }
 
-app.get('/api/projects', (req, res) => {
-  const projects = loadProjects();
-  res.json({ projects });
-});
 
-app.post('/api/projects', (req, res) => {
-  const { name, description, color, folderPath, tags } = req.body;
-  if (!name) return res.status(400).json({ error: 'Nome do projeto é obrigatório.' });
 
-  const projects = loadProjects();
-  const newProj: ServerProjectItem = {
-    id: `proj_${Date.now()}`,
-    name,
-    description: description || 'Novo projeto no workspace do OTTO',
-    color: color || '#38bdf8',
-    folderPath: folderPath || name.toLowerCase().replace(/\s+/g, '_'),
-    tags: tags || ['projeto'],
-    createdAt: new Date().toISOString(),
-  };
-
-  projects.push(newProj);
-  saveProjects(projects);
-
-  // Auto-create project folder in workspace
-  if (newProj.folderPath) {
-    const projDir = path.resolve(WORKSPACE_DIR, newProj.folderPath);
-    if (!fs.existsSync(projDir)) {
-      fs.mkdirSync(projDir, { recursive: true });
-    }
-  }
-
-  res.json({ success: true, project: newProj, projects });
-});
-
-app.delete('/api/projects/:id', (req, res) => {
-  const { id } = req.params;
-  if (id === 'proj_default') {
-    return res.status(400).json({ error: 'O projeto Geral não pode ser excluído.' });
-  }
-  let projects = loadProjects();
-  projects = projects.filter((p) => p.id !== id);
-  saveProjects(projects);
-  res.json({ success: true, projects });
-});
 
 // 5.2 Temporary Memory Store (Scratchpad per task)
 const temporaryScratchpad = new Map<string, string>();
 
-app.get('/api/scratchpad', (req, res) => {
-  res.json({ scratchpad: Object.fromEntries(temporaryScratchpad) });
-});
 
-app.post('/api/scratchpad', (req, res) => {
-  const { entries } = req.body;
-  if (entries && typeof entries === 'object') {
-    for (const [k, v] of Object.entries(entries)) {
-      if (typeof v === 'string') {
-        temporaryScratchpad.set(k, v);
-      }
-    }
-  }
-  res.json({ success: true, scratchpad: Object.fromEntries(temporaryScratchpad) });
-});
 
-app.delete('/api/scratchpad', (req, res) => {
-  temporaryScratchpad.clear();
-  res.json({ success: true, scratchpad: {} });
-});
 
 // 6. Dynamic Personality & Intelligence System
 const PERSONALITY_TRAITS: Record<string, string> = {
@@ -1962,6 +1144,9 @@ app.post('/api/otto/intent', async (req, res) => {
   }
 
   const p = prompt.toLowerCase().trim();
+
+  // Última falha de infraestrutura de IA, usada pelo modo local para explicar o motivo.
+  let lastAiError: string | null = null;
 
   // === REAL MULTIMODAL VISION HANDLER (Gemini 3.8 Flash Vision) ===
   if (image && (image.base64 || image.dataUrl)) {
@@ -2183,6 +1368,11 @@ DIRETRIZES FUNDAMENTAIS:
       }).join('\n')
     : 'Nenhum arquivo indexado no Data Hub no momento.';
 
+  const mediaFileList = listMediaFiles()
+    .slice(0, 15)
+    .map((file) => file.name)
+    .join(', ');
+
   const systemPromptWithMemory = `Você é o OTTO, um assistente de inteligência artificial de alta performance com autonomia total para analisar, raciocinar e controlar os recursos da aplicação.
 "Seu computador. Sua voz. Seu assistente."
 
@@ -2192,12 +1382,16 @@ ${dataHubFileList}
 MEMÓRIAS DE LONGO PRAZO E PREFERÊNCIAS ATIVAS:
 ${memoryContext || 'Nenhuma preferência personalizada registrada.'}
 
+MÍDIA PRONTA PARA O FFMPEG (otto_workspace/media/in):
+${mediaFileList || 'Nenhum áudio ou vídeo enviado ainda.'}
+
 AÇÕES E RECURSOS DO SITE QUE VOCÊ PODE DECIDIR ACIONAR AUTONOMAMENTE:
 - preview_file: Abre na tela a pré-visualização completa (player de vídeo com controles, player de áudio, leitor de PDF, visualizador de imagem ou planilha/código) para um arquivo do Data Hub. Use SEMPRE que o usuário pedir para ver, resumir, analisar, tocar ou abrir um arquivo. (parameters: { fileId: "<id>", filename: "<nome>" }, target: "<id_ou_nome>")
 - open_datahub: Abre o gerenciador de arquivos e pastas do Data Hub. (parameters: {}, target: "datahub")
 - embedded_youtube: Abre o player de vídeo integrado do YouTube com o melhor conteúdo. Use para músicas, tutoriais, receitas e vídeos. (parameters: { query: "<termo de busca>" }, target: "<termo>")
 - open_memory_map: Abre o mapa mental planetário de memórias do OTTO. (parameters: {}, target: "memory_map")
 - open_terminal: Abre o terminal de comandos e diagnóstico de sistema. (parameters: {}, target: "terminal")
+- media_ffmpeg: Processa áudio, vídeo ou imagem com o ffmpeg (extrair áudio, converter, comprimir, thumbnail, cortar, GIF, quadros, normalizar volume, analisar). Use quando o usuário pedir para transformar uma mídia. (parameters: { operation: "extract_audio" | "convert" | "compress" | "thumbnail" | "trim" | "to_gif" | "extract_frames" | "normalize_audio" | "probe", file: "<nome ou id do arquivo>", output: "<nome.ext>", options: { start?, end?, crf?, height?, fps? } }, target: "<nome do arquivo>")
 - open_settings: Abre as configurações de voz, temas e permissões. (parameters: {}, target: "settings")
 - organize_datahub: Gera e exibe o plano de organização inteligente de pastas e triagem de arquivos. (parameters: {}, target: "organize")
 - detect_duplicates: Analisa e exibe arquivos duplicados no Data Hub. (parameters: {}, target: "duplicates")
@@ -2216,7 +1410,7 @@ DIRETRIZES FUNDAMENTAIS DE RACIOCÍNIO E DECISÃO:
   "speechResponse": "Sua resposta analítica, detalhada e inteligente ao usuário.",
   "actions": [
     {
-      "action": "preview_file" | "open_datahub" | "embedded_youtube" | "open_memory_map" | "open_terminal" | "open_settings" | "organize_datahub" | "detect_duplicates" | "system_volume" | "none",
+      "action": "preview_file" | "open_datahub" | "embedded_youtube" | "open_memory_map" | "open_terminal" | "open_settings" | "organize_datahub" | "detect_duplicates" | "system_volume" | "media_ffmpeg" | "none",
       "target": "id_ou_termo_alvo",
       "parameters": { ... },
       "riskLevel": "LOW" | "MEDIUM" | "HIGH",
@@ -2246,6 +1440,8 @@ DIRETRIZES FUNDAMENTAIS DE RACIOCÍNIO E DECISÃO:
         messages,
         model: GroqService.DEFAULT_MODEL,
         temperature: 0.2,
+        reasoningEffort: 'low',
+        responseFormat: 'json',
       });
 
       if (groqResult && groqResult.content) {
@@ -2272,6 +1468,7 @@ DIRETRIZES FUNDAMENTAIS DE RACIOCÍNIO E DECISÃO:
         }
       }
     } catch (groqErr: any) {
+      lastAiError = groqErr?.message || String(groqErr);
       console.log('[GroqPrimaryAI] Groq indisponível no momento. Usando fallback Gemini.');
     }
   }
@@ -2327,17 +1524,33 @@ DIRETRIZES FUNDAMENTAIS DE RACIOCÍNIO E DECISÃO:
         }
       }
     } catch (apiErr: any) {
+      lastAiError = lastAiError || apiErr?.message || String(apiErr);
       console.warn('[GeminiAI] Falha na chamada da IA Gemini:', apiErr?.message || apiErr);
     }
   }
 
-  // Se nenhum modelo conseguiu responder, retorna erro real transparente (PROIBIDO mensagem pronta ou simulada)
-  return res.status(503).json({
-    error: 'Modelos neurais temporariamente indisponíveis.',
-    speechResponse: 'Desculpe, ocorreu uma instabilidade na conexão com os modelos de IA e não foi possível processar sua solicitação agora.',
-    actions: [{ action: 'none', target: 'error', parameters: {}, riskLevel: 'LOW', reasoning: 'Falha nos provedores de IA' }],
-    requiresConfirmation: false,
-  });
+  // Nenhum provedor de nuvem respondeu. Em vez de calar o OTTO, ele responde em modo local:
+  // comandos de mídia (ffmpeg roda na máquina), hora, arquivos, memória — e explica o motivo.
+  // Nada aqui é resposta simulada: ou é ação real executada localmente, ou é uma negativa honesta.
+  try {
+    const localReply = await buildLocalReply({
+      prompt,
+      reason: lastAiError ? String(lastAiError).slice(0, 200) : undefined,
+      dataHubContext,
+      memoriesCount: loadMemories().length,
+    });
+    console.log('[OTTO] Modo local respondeu:', localReply.notice);
+    return res.json(localReply);
+  } catch (localErr) {
+    console.error('[OTTO] Falha no modo local:', localErr);
+    return res.status(503).json({
+      error: 'Modelos neurais temporariamente indisponíveis.',
+      speechResponse:
+        'Estou sem acesso aos modelos de IA e o modo local também falhou. Tente de novo em instantes.',
+      actions: [{ action: 'none', target: 'error', parameters: {}, riskLevel: 'LOW', reasoning: 'Falha nos provedores de IA' }],
+      requiresConfirmation: false,
+    });
+  }
 });
 
 // 8. Vision Endpoint: Screen capture analysis
@@ -2483,17 +1696,26 @@ app.get('/api/web/knowledge', async (req, res) => {
 });
 
 // 8.16 High-Performance Image Proxy & CORS Buster
+// Segurança: a URL vem do cliente, então passa pela guarda anti-SSRF
+// (bloqueia loopback, rede interna, metadados de nuvem e redirecionamentos
+// encadeados), com timeout e teto de tamanho no download.
+const IMAGE_PROXY_TIMEOUT_MS = 8000;
+const IMAGE_PROXY_MAX_BYTES = 8 * 1024 * 1024;
+
 app.get('/api/proxy/image', async (req, res) => {
-  const imageUrl = req.query.url as string;
+  const imageUrl = String(req.query.url || '');
   if (!imageUrl) {
     return res.status(400).send('URL de imagem obrigatória');
   }
 
   try {
-    const response = await fetch(imageUrl, {
+    const response = await safeFetch(imageUrl, {
+      timeoutMs: IMAGE_PROXY_TIMEOUT_MS,
+      maxBytes: IMAGE_PROXY_MAX_BYTES,
+      acceptContentTypes: ['image/'],
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+        'Accept': 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
         'Referer': imageUrl.includes('wikimedia.org') || imageUrl.includes('wikipedia.org')
           ? 'https://pt.wikipedia.org/'
           : 'https://google.com/',
@@ -2504,18 +1726,28 @@ app.get('/api/proxy/image', async (req, res) => {
       return res.status(response.status).send(`Falha ao carregar imagem remota: ${response.statusText}`);
     }
 
+    const buffer = await readBodyWithLimit(response, IMAGE_PROXY_MAX_BYTES);
     const contentType = response.headers.get('content-type') || 'image/jpeg';
+
     res.setHeader('Content-Type', contentType);
     res.setHeader('Cache-Control', 'public, max-age=86400, immutable');
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
-
-    const arrayBuffer = await response.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    res.setHeader('X-Content-Type-Options', 'nosniff');
     res.send(buffer);
   } catch (err: any) {
+    if (err instanceof UnsafeUrlError) {
+      console.warn('[ImageProxy] URL bloqueada:', imageUrl, err.message);
+      return res.status(400).send(err.message);
+    }
+    if (err instanceof PayloadTooLargeError) {
+      return res.status(413).send(err.message);
+    }
+    if (err?.name === 'TimeoutError' || err?.name === 'AbortError') {
+      return res.status(504).send('A imagem demorou demais para carregar.');
+    }
     console.warn('[ImageProxy] Error proxying image:', imageUrl, err?.message);
-    res.status(500).send('Erro ao buscar imagem');
+    res.status(502).send('Erro ao buscar imagem');
   }
 });
 
@@ -3143,25 +2375,63 @@ app.post('/api/tts/respeecher', async (req, res) => {
 });
 
 // Vite middleware in development
+function injectSessionToken(html: string): string {
+  if (!SESSION_TOKEN) return html;
+  const meta = `<meta name="otto-token" content="${SESSION_TOKEN}" />`;
+  return html.includes('name="otto-token"') ? html : html.replace('</head>', `  ${meta}\n</head>`);
+}
+
+app.get('/__otto/live', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  res.json({ buildId: BUILD_ID, pid: process.pid, startedAt: new Date().toISOString() });
+});
+
 async function startServer() {
+  app.use(notFoundApiHandler);
+
+  // Servidor HTTP único: o Vite (dev) se acopla a ele em vez de abrir a porta
+  // extra 24678 do WebSocket de HMR — que aparecia como um preview inválido.
+  const httpServer = http.createServer(app);
+
   if (process.env.NODE_ENV !== 'production') {
     const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: {
+        middlewareMode: true,
+        // Em Vite 8 quem abre a porta extra (24678) é `server.ws`, não `hmr`.
+        // false desliga o WebSocket; quando ligado, ele usa o MESMO servidor HTTP.
+        ws: process.env.DISABLE_HMR === 'true' ? false : { server: httpServer },
+      },
       appType: 'spa',
     });
     app.use(vite.middlewares);
   } else {
-    // Production static files
-    app.use(express.static(path.resolve(__dirname, 'dist')));
-    app.get('*', (req, res) => {
-      res.sendFile(path.resolve(__dirname, 'dist', 'index.html'));
+    // Produção: estáticos + index.html com injeção do token de sessão
+    const distDir = path.resolve(__dirname, 'dist');
+    app.use(express.static(distDir, { index: false }));
+    app.get('*', (req, res, next) => {
+      const indexPath = path.join(distDir, 'index.html');
+      if (!fs.existsSync(indexPath)) return next();
+      try {
+        const html = injectSessionToken(fs.readFileSync(indexPath, 'utf-8'));
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        res.setHeader('Cache-Control', 'no-store');
+        res.send(html);
+      } catch {
+        res.sendFile(indexPath);
+      }
     });
   }
 
-  app.listen(PORT, () => {
+  // Middleware de erro global (sempre por último)
+  app.use(errorHandler);
+
+  httpServer.listen(PORT, '0.0.0.0', () => {
     console.log(`[OTTO] Server running on http://localhost:${PORT}`);
     console.log(`[OTTO] Workspace: ${WORKSPACE_DIR}`);
+    console.log(
+      `[OTTO] Auth: ${isUsingExplicitToken() ? 'OTTO_ACCESS_TOKEN (.env)' : 'token de sessão gerado em otto_workspace/.otto_token'}`
+    );
   });
 }
 

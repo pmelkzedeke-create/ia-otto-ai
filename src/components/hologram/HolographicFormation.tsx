@@ -262,7 +262,7 @@ export const HolographicFormation: React.FC<HolographicFormationProps> = ({
     <div
       ref={containerRef}
       style={{ width, height, aspectRatio }}
-      className={`relative overflow-hidden group/hologram rounded-2xl bg-black/30 border border-white/15 backdrop-blur-md ${className}`}
+      className={`otto-pop-in relative overflow-hidden group/hologram rounded-2xl bg-black/30 border border-white/15 backdrop-blur-md ${className}`}
     >
       {/* Canvas for Photonic Particle Convergence */}
       <canvas

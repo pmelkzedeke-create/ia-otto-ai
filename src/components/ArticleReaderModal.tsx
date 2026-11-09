@@ -12,6 +12,7 @@ import {
   Minimize2,
 } from 'lucide-react';
 import { ttsEngine } from '../services/ttsEngine';
+import { apiFetch } from '../services/http';
 
 interface ArticleReaderModalProps {
   isOpen: boolean;
@@ -47,7 +48,7 @@ export const ArticleReaderModal: React.FC<ArticleReaderModalProps> = ({
   const loadRichArticle = async (targetUrl: string, articleTitle: string) => {
     setLoading(true);
     try {
-      const res = await fetch(
+      const res = await apiFetch(
         `/api/web/article-preview?url=${encodeURIComponent(targetUrl)}&title=${encodeURIComponent(articleTitle)}`
       );
       if (res.ok) {

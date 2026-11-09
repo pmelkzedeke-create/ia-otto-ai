@@ -268,8 +268,8 @@ export const DataHubPreviewModal: React.FC<DataHubPreviewModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-black/85 backdrop-blur-2xl animate-fade-in font-sans">
-      <div className="relative w-full max-w-5xl rounded-[28px] glass-medium border border-white/20 shadow-[0_30px_90px_rgba(0,0,0,0.95)] overflow-hidden flex flex-col max-h-[94vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-black/85 backdrop-blur-2xl dh-backdrop font-sans">
+      <div className="relative w-full max-w-5xl rounded-[28px] glass-medium border border-white/20 shadow-[0_30px_90px_rgba(0,0,0,0.95)] overflow-hidden flex flex-col max-h-[94vh] dh-panel">
         {/* Modal Top Header */}
         <div className="p-3.5 sm:p-4.5 border-b border-white/10 flex items-center justify-between bg-white/[0.04] gap-3">
           <div className="flex items-center gap-3 min-w-0">
@@ -345,7 +345,7 @@ export const DataHubPreviewModal: React.FC<DataHubPreviewModalProps> = ({
         <div className="flex items-center gap-2 px-4 sm:px-5 py-2.5 border-b border-white/10 bg-white/[0.02] text-xs font-mono overflow-x-auto scrollbar-none">
           <button
             onClick={() => setActiveTab('preview')}
-            className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 hover:-translate-y-0.5 ${
               activeTab === 'preview'
                 ? 'bg-cyan-500/20 text-cyan-200 font-bold border border-cyan-400/40 shadow-sm'
                 : 'text-slate-400 hover:text-white'
@@ -357,7 +357,7 @@ export const DataHubPreviewModal: React.FC<DataHubPreviewModalProps> = ({
 
           <button
             onClick={() => setActiveTab('meta')}
-            className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 hover:-translate-y-0.5 ${
               activeTab === 'meta'
                 ? 'bg-cyan-500/20 text-cyan-200 font-bold border border-cyan-400/40 shadow-sm'
                 : 'text-slate-400 hover:text-white'
@@ -369,7 +369,7 @@ export const DataHubPreviewModal: React.FC<DataHubPreviewModalProps> = ({
 
           <button
             onClick={() => setActiveTab('edit')}
-            className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 hover:-translate-y-0.5 ${
               activeTab === 'edit'
                 ? 'bg-cyan-500/20 text-cyan-200 font-bold border border-cyan-400/40 shadow-sm'
                 : 'text-slate-400 hover:text-white'
@@ -381,7 +381,7 @@ export const DataHubPreviewModal: React.FC<DataHubPreviewModalProps> = ({
 
           <button
             onClick={() => setActiveTab('diff')}
-            className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 hover:-translate-y-0.5 ${
               activeTab === 'diff'
                 ? 'bg-cyan-500/20 text-cyan-200 font-bold border border-cyan-400/40 shadow-sm'
                 : 'text-slate-400 hover:text-white'
@@ -393,7 +393,7 @@ export const DataHubPreviewModal: React.FC<DataHubPreviewModalProps> = ({
         </div>
 
         {/* Tab Body */}
-        <div className="p-3 sm:p-5 md:p-6 overflow-y-auto flex-1">
+        <div key={activeTab} className="dh-tab-in p-3 sm:p-5 md:p-6 overflow-y-auto flex-1">
           {activeTab === 'preview' && (
             <div className="flex flex-col gap-4">
               {/* ================= 1. VIDEO PREVIEW ================= */}
@@ -483,7 +483,7 @@ export const DataHubPreviewModal: React.FC<DataHubPreviewModalProps> = ({
                         style={{
                           transform: `scale(${zoomLevel}) rotate(${imageRotation}deg)`,
                         }}
-                        className="max-w-full max-h-[460px] object-contain rounded-xl shadow-2xl transition-transform duration-200"
+                        className="max-w-full max-h-[460px] object-contain rounded-xl shadow-2xl transition-transform duration-300 ease-out will-change-transform"
                       />
                     ) : (
                       <div className="text-slate-400 font-mono text-xs flex flex-col items-center">

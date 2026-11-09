@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } from 'react';
 import {
   ActivityItem,
   ChatMessage,
@@ -18,22 +18,43 @@ import {
 } from './types/otto';
 import type { OttoHologramContent } from './components/hologram';
 import { OttoLiquidView } from './components/OttoLiquidView';
-import { PlanetaryMemoryModal } from './components/PlanetaryMemoryModal';
-import { SettingsModal } from './components/SettingsModal';
-import { ConfirmationDialog } from './components/ConfirmationDialog';
-import { AgentModeModal } from './components/AgentModeModal';
-import { YouTubeWidget, YouTubeVideoData } from './components/YouTubeWidget';
-import { DataHubModal } from './components/datahub';
-import { DataHubPreviewModal } from './components/datahub/DataHubPreviewModal';
+import type { YouTubeVideoData } from './components/YouTubeWidget';
+
+// Componentes pesados carregados sob demanda (code splitting real).
+const PlanetaryMemoryModal = lazy(() =>
+  import('./components/PlanetaryMemoryModal').then((m) => ({ default: m.PlanetaryMemoryModal }))
+);
+const SettingsModal = lazy(() =>
+  import('./components/SettingsModal').then((m) => ({ default: m.SettingsModal }))
+);
+const ConfirmationDialog = lazy(() =>
+  import('./components/ConfirmationDialog').then((m) => ({ default: m.ConfirmationDialog }))
+);
+const AgentModeModal = lazy(() =>
+  import('./components/AgentModeModal').then((m) => ({ default: m.AgentModeModal }))
+);
+const YouTubeWidget = lazy(() =>
+  import('./components/YouTubeWidget').then((m) => ({ default: m.YouTubeWidget }))
+);
+const DataHubModal = lazy(() =>
+  import('./components/datahub/DataHubModal').then((m) => ({ default: m.DataHubModal }))
+);
+const DataHubPreviewModal = lazy(() =>
+  import('./components/datahub/DataHubPreviewModal').then((m) => ({ default: m.DataHubPreviewModal }))
+);
 import { OttoFile } from './types/dataHub';
 import { DataHubStorage } from './services/dataHubStorage';
 import { audioAnalyzer } from './services/audioAnalyzer';
 import { soundEffects } from './services/audioSynthesizer';
-import { voiceEngine } from './services/voiceEngine';
+import { voiceEngine, describeMicEnvironment, describeMicError } from './services/voiceEngine';
 import { ttsEngine } from './services/ttsEngine';
+import { describeApiError } from './services/http';
+import { loadHistory, saveHistory } from './services/chatHistoryStore';
+import { OfflineBanner } from './components/OfflineBanner';
 import { ApiBridge } from './services/apiBridge';
 import { ToolRouter } from './services/toolRouter';
 import { CheckCircle2, AlertTriangle, XCircle, Info, Activity, X } from 'lucide-react';
+import { apiFetch } from './services/http';
 
 
 export default function App() {
@@ -82,15 +103,19 @@ export default function App() {
   // Activity Feed (Real actions only)
   const [activities, setActivities] = useState<ActivityItem[]>([]);
 
-  // Chat Feed (Clean initial state with dynamic welcome)
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
-    {
-      id: 'msg_welcome',
-      sender: 'otto',
-      text: 'Olá! Sou o OTTO Liquid. Como posso ajudar você hoje?',
-      timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-    },
-  ]);
+  // Chat Feed — restaurado do disco quando existe; a recarga não apaga mais a conversa.
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>(() => {
+    const restored = loadHistory();
+    if (restored.length > 0) return restored;
+    return [
+      {
+        id: 'msg_welcome',
+        sender: 'otto' as const,
+        text: 'Olá! Sou o OTTO Liquid. Como posso ajudar você hoje?',
+        timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+      },
+    ];
+  });
 
   const latestOttoMessage = useMemo(() => {
     for (let i = chatMessages.length - 1; i >= 0; i--) {
@@ -105,6 +130,7 @@ export default function App() {
   const [settings, setSettings] = useState<OttoSettings>(() => {
     const baseSettings: OttoSettings = {
       voiceEnabled: true,
+      textOnlyMode: false,
       voiceVolume: 0.95,
       voiceRate: 1.0,
       voicePitch: 1.0,
@@ -173,6 +199,31 @@ export default function App() {
     return () => clearInterval(timer);
   }, []);
 
+  // Pré-carrega os modais sob demanda para que o primeiro clique já abra
+  // animado, sem o "pulo" de esperar o chunk baixar (causa do aspecto brusco).
+  useEffect(() => {
+    const warmUp = () => {
+      void import('./components/datahub/DataHubModal');
+      void import('./components/datahub/DataHubPreviewModal');
+      void import('./components/SettingsModal');
+      void import('./components/PlanetaryMemoryModal');
+      void import('./components/AgentModeModal');
+      void import('./components/YouTubeWidget');
+      void import('./components/ConfirmationDialog');
+    };
+
+    const ric = (window as unknown as { requestIdleCallback?: (cb: () => void) => number })
+      .requestIdleCallback;
+    if (typeof ric === 'function') {
+      const id = ric(warmUp);
+      const cancel = (window as unknown as { cancelIdleCallback?: (id: number) => void })
+        .cancelIdleCallback;
+      return () => cancel?.(id);
+    }
+    const timer = window.setTimeout(warmUp, 900);
+    return () => window.clearTimeout(timer);
+  }, []);
+
   // System telemetry fetcher
   useEffect(() => {
     const fetchInfo = async () => {
@@ -187,6 +238,21 @@ export default function App() {
   // Auto-scroll chat to bottom
   useEffect(() => {
     chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatMessages]);
+
+  // O estado ERROR é visual: volta sozinho para IDLE se nada depende dele.
+  useEffect(() => {
+    if (state !== 'ERROR' || pendingConfirmation) return;
+    const timer = setTimeout(() => setState((curr) => (curr === 'ERROR' ? 'IDLE' : curr)), 6000);
+    return () => clearTimeout(timer);
+  }, [state, pendingConfirmation]);
+
+  // Persistência do histórico: sobrevive a F5, recarga do bridge de build e erro fatal.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      saveHistory(chatMessages);
+    }, 400);
+    return () => clearTimeout(timer);
   }, [chatMessages]);
 
   // Sync TTS state with OTTO state
@@ -239,7 +305,7 @@ export default function App() {
 
     try {
       addActivity(`Buscando melhor vídeo sobre "${query}"...`, 'info');
-      const res = await fetch(`/api/youtube/search?q=${encodeURIComponent(query)}`);
+      const res = await apiFetch(`/api/youtube/search?q=${encodeURIComponent(query)}`);
       const data = await res.json();
       if (data && data.topVideo) {
         setYoutubeState({
@@ -255,6 +321,34 @@ export default function App() {
     }
   }, [addActivity]);
 
+  // Guarda contra envio duplo e watchdog do estado "pensando".
+  // Sem isto, um stream que morre no meio deixava o OTTO travado em THINKING para sempre.
+  const busyRef = useRef(false);
+  const thinkingWatchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const stopThinkingWatchdog = useCallback(() => {
+    if (thinkingWatchdogRef.current) {
+      clearTimeout(thinkingWatchdogRef.current);
+      thinkingWatchdogRef.current = null;
+    }
+  }, []);
+
+  const startThinkingWatchdog = useCallback(() => {
+    stopThinkingWatchdog();
+    thinkingWatchdogRef.current = setTimeout(() => {
+      thinkingWatchdogRef.current = null;
+      busyRef.current = false;
+      setState((curr) => (curr === 'THINKING' || curr === 'EXECUTING' ? 'IDLE' : curr));
+      setInterimTranscript('');
+      addActivity(
+        'A resposta demorou mais de 90 segundos e foi encerrada. Tente novamente ou simplifique o pedido.',
+        'error'
+      );
+    }, 90_000);
+  }, [addActivity, stopThinkingWatchdog]);
+
+  useEffect(() => () => stopThinkingWatchdog(), [stopThinkingWatchdog]);
+
   // Process a command (either from speech or typed in the chat input)
   const handleProcessCommand = useCallback(
     async (
@@ -267,9 +361,16 @@ export default function App() {
       const promptText = spokenText.trim() || (options?.attachedImage ? 'Analise esta imagem em detalhes' : '');
       if (!promptText && !options?.attachedImage && !options?.attachedFile) return;
 
+      if (busyRef.current) {
+        addActivity('Ainda estou processando o comando anterior. Aguarde a resposta.', 'warning');
+        return;
+      }
+      busyRef.current = true;
+
       setTranscript(promptText);
       setInterimTranscript('');
       setState('THINKING');
+      startThinkingWatchdog();
 
       // Add to chat feed
       const timeStr = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
@@ -332,7 +433,7 @@ export default function App() {
             speechResponse: intentResult.speechResponse,
           });
 
-          if (settings.voiceEnabled) {
+          if (!settings.textOnlyMode && settings.voiceEnabled) {
             voiceEngine.setMuted(true);
             await ttsEngine.speak(
               intentResult.confirmationPrompt || 'Atenção. Esta ação requer sua confirmação antes de prosseguir.',
@@ -466,6 +567,15 @@ export default function App() {
 
             const res = await ToolRouter.executeAction(act);
             addActivity(res.message, res.success ? 'success' : 'error');
+
+            // Resultado do ffmpeg entra no Data Hub e já abre no visualizador
+            if (act.action === 'media_ffmpeg' && res.success && res.data?.createdFileId) {
+              const generated = DataHubStorage.getFileById(res.data.createdFileId);
+              if (generated) {
+                setSelectedPreviewFile(generated);
+                setShowPreviewModal(true);
+              }
+            }
           }
         }
 
@@ -533,7 +643,7 @@ export default function App() {
         ]);
 
         // Speak via ElevenLabs or browser synthesis
-        if (settings.voiceEnabled) {
+        if (!settings.textOnlyMode && settings.voiceEnabled) {
           setState('SPEAKING');
           // MUTE mic before speaking so OTTO never hears its own voice!
           voiceEngine.setMuted(true);
@@ -558,8 +668,9 @@ export default function App() {
         setState('IDLE');
       } catch (err: any) {
         console.error('Error processing command:', err);
+        stopThinkingWatchdog();
         setState('ERROR');
-        const fallbackMsg = err?.message || 'Não consegui interpretar o comando.';
+        const fallbackMsg = describeApiError(err);
         addActivity(fallbackMsg, 'error');
 
         setChatMessages((prev) => [
@@ -572,7 +683,7 @@ export default function App() {
           },
         ]);
 
-        if (settings.voiceEnabled) {
+        if (!settings.textOnlyMode && settings.voiceEnabled) {
           voiceEngine.setMuted(true);
           await ttsEngine.speak(fallbackMsg, {
             volume: settings.voiceVolume,
@@ -586,9 +697,14 @@ export default function App() {
           });
           voiceEngine.onAssistantFinishedSpeaking();
         }
+      } finally {
+        // Sempre libera a trava e o watchdog, mesmo em return antecipado
+        // (ex.: confirmação de ação de alto risco) ou em erro.
+        stopThinkingWatchdog();
+        busyRef.current = false;
       }
     },
-    [addActivity, settings, openYouTubePlayer]
+    [addActivity, settings, openYouTubePlayer, startThinkingWatchdog, stopThinkingWatchdog]
   );
 
   const handleProcessCommandRef = useRef(handleProcessCommand);
@@ -705,10 +821,33 @@ export default function App() {
       return;
     }
 
+    // Antes de anunciar "microfone ativado", confirma que ele realmente abre:
+    // dentro de iframe, sem HTTPS ou com permissão negada o navegador recusa calado.
+    const env = describeMicEnvironment();
+    if (!env.hasMediaDevices) {
+      addActivity(describeMicError(new Error('sem mediaDevices')), 'error');
+      setState('IDLE');
+      setIsListening(false);
+      return;
+    }
+
+    const stream = await voiceEngine.ensureMicrophonePermission();
+    if (!stream) {
+      addActivity(voiceEngine.getLastMicError() || 'Não consegui abrir o microfone.', 'error');
+      setState('IDLE');
+      setIsListening(false);
+      return;
+    }
+
     soundEffects.playListening();
     setState('LISTENING');
     setIsListening(true);
-    addActivity('Microfone ativado. Pode falar seu comando...', 'info');
+    addActivity(
+      env.speechApi
+        ? 'Microfone ativado. Pode falar seu comando...'
+        : 'Microfone ativado. Este navegador não tem reconhecimento nativo — o áudio será transcrito no servidor.',
+      'info'
+    );
     await voiceEngine.activateManualCommand();
   }, [state, addActivity]);
 
@@ -716,6 +855,10 @@ export default function App() {
   const handleChatSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!textInput.trim()) return;
+    if (busyRef.current) {
+      addActivity('Ainda estou processando o comando anterior. Aguarde a resposta.', 'warning');
+      return;
+    }
     const cmd = textInput.trim();
     setTextInput('');
     handleProcessCommand(cmd);
@@ -731,7 +874,7 @@ export default function App() {
     const result = await ToolRouter.executeAction(action);
     addActivity(result.message, result.success ? 'success' : 'error');
 
-    if (settings.voiceEnabled) {
+    if (!settings.textOnlyMode && settings.voiceEnabled) {
       voiceEngine.setMuted(true);
       setState('SPEAKING');
       await ttsEngine.speak(result.message, {
@@ -770,8 +913,20 @@ export default function App() {
     });
   };
 
+  // Efeito "sheet" do iOS: com um modal aberto, o conteúdo de trás recua levemente.
+  const isAnyModalOpen =
+    showMemoryModal || showSettingsModal || showAgentModal || showDataHubModal || showPreviewModal;
+
   return (
-    <div className={`h-[100dvh] w-screen relative overflow-hidden select-none font-sans transition-colors duration-300 ${isLightMode ? 'bg-[#edf1f7] text-slate-900 theme-light' : 'bg-[#090a0d] text-slate-100'}`}>
+    <div className={`otto-shell h-[100dvh] w-screen relative overflow-hidden select-none font-sans transition-colors duration-300 ${isLightMode ? 'otto-light-bg text-slate-900 theme-light' : 'bg-[#090a0d] text-slate-100'}`}>
+      <OfflineBanner isLight={isLightMode} />
+      <div
+        className="h-full w-full origin-center transition-transform duration-500 ease-out"
+        style={{
+          transform: isAnyModalOpen ? 'scale(0.985)' : 'scale(1)',
+          transitionTimingFunction: 'cubic-bezier(.32,.72,0,1)',
+        }}
+      >
       <OttoLiquidView
         state={state}
         isListening={isListening}
@@ -789,76 +944,90 @@ export default function App() {
         settings={settings}
         onOpenSettings={() => setShowSettingsModal(true)}
         onOpenMemory={() => setShowMemoryModal(true)}
-        onOpenAgentMode={() => setShowAgentModal(true)}
         onOpenDataHub={() => setShowDataHubModal(true)}
         activePlan={currentPlan}
         interimTranscript={interimTranscript}
       />
+      </div>
 
       {/* OTTO DATA HUB MODAL */}
-      <DataHubModal
-        isOpen={showDataHubModal}
-        onClose={() => setShowDataHubModal(false)}
-        onAskOttoAboutFiles={(prompt) => handleProcessCommand(prompt)}
-      />
+      <Suspense fallback={null}>
+        <DataHubModal
+          isOpen={showDataHubModal}
+          onClose={() => setShowDataHubModal(false)}
+          onAskOttoAboutFiles={(prompt) => handleProcessCommand(prompt)}
+        />
+      </Suspense>
 
       {/* OTTO FILE PREVIEW MODAL (Videos, Audios, PDFs, Spreadsheets, Images, Code) */}
-      <DataHubPreviewModal
-        file={selectedPreviewFile}
-        isOpen={showPreviewModal}
-        onClose={() => {
-          setShowPreviewModal(false);
-          setSelectedPreviewFile(null);
-        }}
-        onAskOttoAboutFile={(file, prompt) => handleProcessCommand(prompt)}
-      />
+      <Suspense fallback={null}>
+        <DataHubPreviewModal
+          file={selectedPreviewFile}
+          isOpen={showPreviewModal}
+          onClose={() => {
+            setShowPreviewModal(false);
+            setSelectedPreviewFile(null);
+          }}
+          onAskOttoAboutFile={(file, prompt) => handleProcessCommand(prompt)}
+        />
+      </Suspense>
 
       {/* INTEGRATED YOUTUBE WORKSPACE PLAYER */}
-      <YouTubeWidget
-        isOpen={youtubeState.isOpen}
-        onClose={() => setYoutubeState((prev) => ({ ...prev, isOpen: false }))}
-        query={youtubeState.query}
-        topVideo={youtubeState.topVideo}
-        relatedVideos={youtubeState.relatedVideos}
-        onSelectVideo={(video) =>
-          setYoutubeState((prev) => ({ ...prev, topVideo: video }))
-        }
-      />
+      <Suspense fallback={null}>
+        <YouTubeWidget
+          isOpen={youtubeState.isOpen}
+          onClose={() => setYoutubeState((prev) => ({ ...prev, isOpen: false }))}
+          query={youtubeState.query}
+          topVideo={youtubeState.topVideo}
+          relatedVideos={youtubeState.relatedVideos}
+          onSelectVideo={(video) =>
+            setYoutubeState((prev) => ({ ...prev, topVideo: video }))
+          }
+        />
+      </Suspense>
 
       {/* MODALS */}
-      <PlanetaryMemoryModal
-        isOpen={showMemoryModal}
-        onClose={() => setShowMemoryModal(false)}
-        onMemoryChanged={() => addActivity('Memória central do OTTO sincronizada.', 'info')}
-        onSelectTopicForChat={(topicText) => handleProcessCommand(topicText)}
-        onSearchTopic={(query) => handleProcessCommand(`Pesquise na web sobre ${query}`)}
-      />
+      <Suspense fallback={null}>
+        <PlanetaryMemoryModal
+          isOpen={showMemoryModal}
+          onClose={() => setShowMemoryModal(false)}
+          onMemoryChanged={() => addActivity('Memória central do OTTO sincronizada.', 'info')}
+          onSelectTopicForChat={(topicText) => handleProcessCommand(topicText)}
+          onSearchTopic={(query) => handleProcessCommand(`Pesquise na web sobre ${query}`)}
+        />
+      </Suspense>
 
-      <SettingsModal
-        isOpen={showSettingsModal}
-        onClose={() => setShowSettingsModal(false)}
-        settings={settings}
-        onUpdateSettings={handleUpdateSettings}
-      />
+      <Suspense fallback={null}>
+        <SettingsModal
+          isOpen={showSettingsModal}
+          onClose={() => setShowSettingsModal(false)}
+          settings={settings}
+          onUpdateSettings={handleUpdateSettings}
+        />
+      </Suspense>
 
-      <AgentModeModal
-        isOpen={showAgentModal}
-        onClose={() => setShowAgentModal(false)}
-        plan={currentPlan}
-        initialTaskState={currentTaskState}
-        onUpdatePlan={(updatedPlan) => setCurrentPlan(updatedPlan)}
-        onStepCompleted={(step, msg) => addActivity(`Etapa concluída: ${step.title} — ${msg}`, 'success')}
-        settings={settings}
-        onRunNewTask={(taskPrompt) => handleProcessCommand(taskPrompt)}
-      />
+      <Suspense fallback={null}>
+        <AgentModeModal
+          isOpen={showAgentModal}
+          onClose={() => setShowAgentModal(false)}
+          plan={currentPlan}
+          initialTaskState={currentTaskState}
+          onUpdatePlan={(updatedPlan) => setCurrentPlan(updatedPlan)}
+          onStepCompleted={(step, msg) => addActivity(`Etapa concluída: ${step.title} — ${msg}`, 'success')}
+          settings={settings}
+          onRunNewTask={(taskPrompt) => handleProcessCommand(taskPrompt)}
+        />
+      </Suspense>
 
-      <ConfirmationDialog
-        isOpen={Boolean(pendingConfirmation)}
-        prompt={pendingConfirmation?.prompt || ''}
-        action={pendingConfirmation?.action || null}
-        onConfirm={handleConfirmAction}
-        onCancel={handleCancelAction}
-      />
+      <Suspense fallback={null}>
+        <ConfirmationDialog
+          isOpen={Boolean(pendingConfirmation)}
+          prompt={pendingConfirmation?.prompt || ''}
+          action={pendingConfirmation?.action || null}
+          onConfirm={handleConfirmAction}
+          onCancel={handleCancelAction}
+        />
+      </Suspense>
     </div>
   );
 }

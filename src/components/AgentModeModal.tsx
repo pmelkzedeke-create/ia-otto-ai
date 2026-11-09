@@ -219,7 +219,7 @@ export const AgentModeModal: React.FC<AgentModeModalProps> = ({
     addLog(`TaskRouter → ${decision.route} (${decision.routeName})`);
     addLog(`Motivo: ${decision.reason} [Confiança: ${Math.round(decision.confidence * 100)}%]`);
 
-    if (settings?.voiceEnabled) {
+    if (settings?.voiceEnabled && !settings?.textOnlyMode) {
       ttsEngine.speak(`Iniciando tarefa técnica na rota especializada: ${text}`).catch(() => {});
     }
 
@@ -239,7 +239,7 @@ export const AgentModeModal: React.FC<AgentModeModalProps> = ({
         }
         soundEffects.playSuccess();
         addLog(`🎉 Orquestração concluída com sucesso! ${res.files?.length || 0} arquivos criados.`);
-        if (settings?.voiceEnabled) {
+        if (settings?.voiceEnabled && !settings?.textOnlyMode) {
           ttsEngine.speak(`Tarefa concluída com sucesso! Todos os arquivos foram criados e testados no sandbox.`).catch(() => {});
         }
       }
@@ -271,7 +271,7 @@ export const AgentModeModal: React.FC<AgentModeModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/75 backdrop-blur-md animate-fadeIn">
-      <div className="w-full max-w-5xl h-[90vh] flex flex-col rounded-3xl bg-[#0a0d14]/95 border border-white/15 shadow-2xl overflow-hidden glass-strong text-slate-100">
+      <div className="otto-dialog w-full max-w-5xl h-[90vh] flex flex-col rounded-3xl bg-[#0a0d14]/95 border border-white/15 shadow-2xl overflow-hidden glass-strong text-slate-100">
         {/* Header */}
         <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between bg-white/[0.03]">
           <div className="flex items-center gap-3">

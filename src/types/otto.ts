@@ -34,6 +34,7 @@ export interface OttoAction {
     | 'preview_file'
     | 'open_settings'
     | 'open_terminal'
+    | 'media_ffmpeg'
     | 'none';
   target?: string;
   parameters?: Record<string, any>;
@@ -262,6 +263,8 @@ export interface SystemTelemetry {
   nodeVersion: string;
   serverTime: string;
   batteryPercent?: number;
+  /** false quando os dados são apenas o placeholder de servidor indisponível. */
+  available?: boolean;
 }
 
 export interface WorkspaceItem {
@@ -316,6 +319,8 @@ export interface OttoPermissions {
 
 export interface OttoSettings {
   voiceEnabled: boolean;
+  /** Responde como o Claude: só texto no chat, sem sintetizar voz automaticamente. */
+  textOnlyMode?: boolean;
   voiceVolume: number; // 0 to 1
   voiceRate: number; // 0.5 to 2
   voicePitch: number; // 0.5 to 2

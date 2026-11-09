@@ -4,6 +4,7 @@
 import { OttoAction } from '../types/otto';
 import { ApiBridge } from './apiBridge';
 import { soundEffects } from './audioSynthesizer';
+import { DataHubStorage } from './dataHubStorage';
 
 export interface ToolExecutionResult {
   success: boolean;
@@ -229,9 +230,137 @@ export class ToolRouter {
         };
       }
 
+      case 'media_ffmpeg': {
+        const operation = String(params.operation || target || '').trim();
+        const fileRef = String(params.file || params.input || params.fileName || params.filename || '').trim();
+
+        if (!operation || !fileRef) {
+          return { success: false, message: 'Preciso saber a operação e o arquivo para usar o ffmpeg.' };
+        }
+
+        onProgress?.(`Preparando ${fileRef} para o motor de mídia...`);
+        soundEffects.playActionStart();
+
+        const prepared = await prepareMediaInput(fileRef);
+        if (!prepared) {
+          return {
+            success: false,
+            message: `Não encontrei "${fileRef}" no Data Hub nem na pasta de mídia do OTTO.`,
+          };
+        }
+
+        onProgress?.(`ffmpeg: ${operation} em ${prepared.label}...`);
+
+        const runOnce = (overwrite: boolean) =>
+          ApiBridge.runMediaOperation({
+            operation,
+            input: prepared.input,
+            output: params.output ? String(params.output) : undefined,
+            options: params.options && typeof params.options === 'object' ? params.options : {},
+            overwrite,
+          });
+
+        let result = await runOnce(false);
+        if (!result.ok && result.code === 'OUTPUT_EXISTS') {
+          // O usuário pediu de novo: substitui o resultado anterior.
+          result = await runOnce(true);
+        }
+
+        if (!result.ok) {
+          return { success: false, message: result.error || 'O ffmpeg não conseguiu processar esse arquivo.' };
+        }
+
+        const createdFileId = await importMediaResult(result);
+
+        const sizeMb = result.sizeBytes ? (result.sizeBytes / (1024 * 1024)).toFixed(2) : null;
+        const details = [
+          result.outputName ? `"${result.outputName}"` : null,
+          sizeMb ? `${sizeMb} MB` : null,
+          result.durationMs ? `em ${(result.durationMs / 1000).toFixed(1)}s` : null,
+        ]
+          .filter(Boolean)
+          .join(' · ');
+
+        return {
+          success: true,
+          message: `ffmpeg pronto: ${details || operation} (a partir de ${prepared.label}).`,
+          data: {
+            operation,
+            outputName: result.outputName,
+            downloadUrl: result.downloadUrl,
+            createdFileId,
+            sizeBytes: result.sizeBytes,
+            durationMs: result.durationMs,
+          },
+        };
+      }
+
       case 'none':
       default:
         return { success: true, message: 'Comando processado.' };
     }
   }
+}
+
+/**
+ * Descobre o arquivo pedido pelo modelo: procura no Data Hub (por id ou nome),
+ * garante que ele exista em `otto_workspace/media/in` e devolve o nome para o ffmpeg.
+ */
+async function prepareMediaInput(fileRef: string): Promise<{ input: string; label: string } | null> {
+  const file =
+    DataHubStorage.getFileById(fileRef) ||
+    DataHubStorage.getAllFiles().find((candidate) => candidate.name.toLowerCase() === fileRef.toLowerCase()) ||
+    DataHubStorage.getAllFiles().find((candidate) => candidate.name.toLowerCase().includes(fileRef.toLowerCase()));
+
+  if (!file) {
+    // Pode ser um arquivo que já está na pasta de mídia do servidor.
+    const media = await ApiBridge.listMediaFiles();
+    const match = media.find((entry) => entry.name.toLowerCase() === fileRef.toLowerCase());
+    return match ? { input: match.name, label: match.name } : null;
+  }
+
+  if (file.metadata?.serverName) {
+    return { input: file.metadata.serverName, label: file.name };
+  }
+
+  try {
+    const mediaUrl = await DataHubStorage.getFileMediaUrl(file.id);
+    if (mediaUrl) {
+      const blob = await fetch(mediaUrl).then((res) => res.blob());
+      const dataUrl = await blobToDataUrl(blob);
+      const synced = await ApiBridge.uploadMedia(file.name, dataUrl);
+      if (synced) return { input: synced.name, label: file.name };
+    }
+  } catch (error) {
+    console.warn('[ffmpeg] Não consegui enviar a mídia para o servidor:', error);
+  }
+
+  return { input: file.name, label: file.name };
+}
+
+/** Traz o resultado do ffmpeg para o Data Hub, para ficar visível e tocável no chat. */
+async function importMediaResult(result: { downloadUrl?: string | null; outputName?: string }): Promise<string | undefined> {
+  if (!result.downloadUrl || !result.outputName) return undefined;
+
+  try {
+    const response = await fetch(result.downloadUrl);
+    if (!response.ok) return undefined;
+
+    const blob = await response.blob();
+    const generated = new File([blob], result.outputName, { type: blob.type || 'application/octet-stream' });
+    const [created] = await DataHubStorage.uploadFiles([generated], undefined, { syncToServer: false });
+    return created?.id;
+  } catch (error) {
+    console.warn('[ffmpeg] Resultado não pôde ser adicionado ao Data Hub:', error);
+    return undefined;
+  }
+}
+
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ''));
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
 }

@@ -39,7 +39,7 @@ export const DataHubChatCard: React.FC<DataHubChatCardProps> = ({
           <div
             key={file.id}
             onClick={() => onOpenFileModal && onOpenFileModal(file)}
-            className="p-2.5 rounded-xl bg-black/40 hover:bg-white/10 border border-white/10 flex items-center justify-between gap-2.5 transition-colors cursor-pointer group"
+            className="dh-card p-2.5 rounded-xl bg-black/40 hover:bg-white/10 border border-white/10 hover:border-white/25 flex items-center justify-between gap-2.5 transition-colors cursor-pointer group"
           >
             <div className="flex items-center gap-2 truncate">
               <FileText className="w-4 h-4 text-cyan-400 shrink-0 group-hover:scale-110 transition-transform" />

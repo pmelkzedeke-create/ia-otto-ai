@@ -6,6 +6,7 @@
 
 import { ttsEngine } from './ttsEngine';
 import { audioAnalyzer } from './audioAnalyzer';
+import { apiFetch } from './http';
 
 export interface VoiceEngineCallbacks {
   onInterimResult?: (text: string) => void;
@@ -15,6 +16,90 @@ export interface VoiceEngineCallbacks {
   onError?: (errorMsg: string) => void;
   onStateChange?: (isListening: boolean) => void;
   onModeChange?: (mode: 'STANDBY' | 'LISTENING_COMMAND') => void;
+}
+
+export interface MicEnvironment {
+  secureContext: boolean;
+  hasMediaDevices: boolean;
+  inIframe: boolean;
+  speechApi: boolean;
+  platform: string;
+}
+
+/** Radiografia do ambiente: responde "por que o microfone não abre?" antes de tentar. */
+export function describeMicEnvironment(): MicEnvironment {
+  if (typeof window === 'undefined') {
+    return { secureContext: false, hasMediaDevices: false, inIframe: false, speechApi: false, platform: 'server' };
+  }
+
+  let inIframe = false;
+  try {
+    inIframe = window.self !== window.top;
+  } catch {
+    inIframe = true; // acesso ao top bloqueado ⇒ está dentro de um iframe
+  }
+
+  return {
+    secureContext: Boolean(window.isSecureContext),
+    hasMediaDevices: Boolean(navigator.mediaDevices?.getUserMedia),
+    inIframe,
+    speechApi: Boolean((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition),
+    platform: navigator.userAgent,
+  };
+}
+
+/**
+ * Traduz o erro do navegador em uma frase com ação. Sem isso o usuário só vê
+ * "OTTO não me ouve" — o DOMException real fica escondido no console.
+ */
+export function describeMicError(error: unknown): string {
+  const env = describeMicEnvironment();
+  const name = (error as any)?.name || '';
+  const message = String((error as any)?.message || '');
+
+  const iframeHint = env.inIframe
+    ? ' Você está vendo o OTTO dentro de outra página — abra em uma aba própria para liberar o microfone.'
+    : '';
+
+  switch (name) {
+    case 'NotAllowedError':
+    case 'PermissionDeniedError':
+      return (
+        'O navegador bloqueou o microfone. Clique no cadeado ao lado do endereço e permita o microfone, depois recarregue.' +
+        (env.inIframe ? ' Em página embutida, o bloqueio é automático: abra o OTTO em uma aba própria.' : '')
+      );
+    case 'NotFoundError':
+    case 'DevicesNotFoundError':
+      return 'Nenhum microfone encontrado. Conecte um microfone ou headset e recarregue a página.';
+    case 'NotReadableError':
+    case 'TrackStartError':
+      return 'O microfone está ocupado por outro programa (reunião, gravador, outra aba). Feche o outro app e tente de novo.';
+    case 'OverconstrainedError':
+      return 'Seu microfone não aceita as configurações pedidas. Tentando o modo padrão…';
+    case 'SecurityError':
+      return 'O navegador bloqueou o microfone por segurança (página não segura ou dentro de iframe).' + iframeHint;
+    case 'AbortError':
+      return 'A captura de áudio foi interrompida pelo sistema.';
+    default:
+      break;
+  }
+
+  const suffix =
+    name && message
+      ? ` (${name}: ${message.slice(0, 80)})`
+      : name && name !== 'Error'
+      ? ` (${name})`
+      : '';
+
+  if (!env.hasMediaDevices) {
+    return (
+      env.secureContext
+        ? `Este navegador não expõe captura de áudio (mediaDevices)${suffix}. Use Chrome, Edge ou Safari atualizado.`
+        : `A página não está em HTTPS nem em localhost, e o navegador só libera microfone nesses casos${suffix}.`
+    );
+  }
+
+  return `Não consegui abrir o microfone${name ? ` (${name})` : ''}${message ? `: ${message.slice(0, 120)}` : '.'}`;
 }
 
 class VoiceEngine {
@@ -41,6 +126,8 @@ class VoiceEngine {
   private hasReceivedSpeechResult: boolean = false;
   private isProcessingFallback: boolean = false;
   private micPermissionDenied: boolean = false;
+  private lastMicError: string | null = null;
+  private speechBlocked: boolean = false;
 
   constructor() {
     if (typeof window !== 'undefined') {
@@ -161,13 +248,20 @@ class VoiceEngine {
       }
     } catch (err: any) {
       console.warn('[VoiceEngine] Microphone permission error:', err);
-      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-        this.callbacks?.onError?.(
-          'Microfone bloqueado. Clique no ícone de permissão do navegador para liberar o microfone.'
-        );
+      this.lastMicError = describeMicError(err);
+
+      if (err?.name === 'NotAllowedError' || err?.name === 'PermissionDeniedError') {
+        this.micPermissionDenied = true;
       }
+
+      this.callbacks?.onError?.(this.lastMicError);
     }
     return null;
+  }
+
+  /** Última falha do microfone, para a interface mostrar o motivo real. */
+  public getLastMicError(): string | null {
+    return this.lastMicError;
   }
 
   public init(callbacks: VoiceEngineCallbacks, wakeWord = true) {
@@ -306,6 +400,20 @@ class VoiceEngine {
         this.recognition.onerror = (event: any) => {
           if (event.error === 'aborted' || event.error === 'no-speech') return;
           console.warn('[VoiceEngine] WebSpeech error event:', event.error);
+
+          // O reconhecimento do navegador depende dos servidores do Google e não
+          // funciona dentro de iframe/rede restrita — mas o microfone pode estar OK.
+          // Nesse caso seguimos gravando e transcrevemos no servidor.
+          if (['network', 'service-not-allowed', 'audio-capture', 'language-not-supported'].includes(event.error)) {
+            this.speechBlocked = true;
+            this.callbacks?.onInterimResult?.(
+              event.error === 'audio-capture'
+                ? 'Microfone indisponível para o reconhecimento.'
+                : 'Reconhecimento do navegador indisponível — usando transcrição do servidor.'
+            );
+            return;
+          }
+
           if (event.error === 'not-allowed') {
             const alreadyReported = this.micPermissionDenied;
             this.micPermissionDenied = true;
@@ -426,7 +534,7 @@ class VoiceEngine {
       reader.readAsDataURL(audioBlob);
       const dataUrl = await base64Promise;
 
-      const response = await fetch('/api/transcribe-audio', {
+      const response = await apiFetch('/api/transcribe-audio', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ audioBase64: dataUrl, mimeType }),
@@ -453,7 +561,10 @@ class VoiceEngine {
       clearTimeout(this.commandTimeoutTimer);
       this.commandTimeoutTimer = null;
     }
-    // 10 seconds timeout for command mode
+    // Sem reconhecimento nativo (iframe, rede restrita, Firefox) quem transcreve é o
+    // servidor: esperar 10 s de silêncio só atrasa a resposta.
+    const janelaMs = !this.isSpeechSupported || this.speechBlocked ? 5000 : 10000;
+
     this.commandTimeoutTimer = setTimeout(() => {
       if (this.awaitingCommand && !this.isTTSActive) {
         if (!this.hasReceivedSpeechResult) {
@@ -464,7 +575,7 @@ class VoiceEngine {
         this.callbacks?.onInterimResult?.('');
         this.stopAllAudioCapture();
       }
-    }, 10000);
+    }, janelaMs);
   }
 
   private triggerFinalCommand(commandText: string) {
@@ -503,6 +614,21 @@ class VoiceEngine {
 
     // 1. Force explicit getUserMedia permission (lights up the browser's red microphone dot)
     const stream = await this.ensureMicrophonePermission();
+
+    if (!stream) {
+      // Sem stream não há como ouvir: encerra o modo de comando em vez de
+      // deixar a interface "escutando" para sempre.
+      if (this.commandTimeoutTimer) {
+        clearTimeout(this.commandTimeoutTimer);
+        this.commandTimeoutTimer = null;
+      }
+      this.awaitingCommand = false;
+      this.isListening = false;
+      this.callbacks?.onModeChange?.('STANDBY');
+      this.callbacks?.onStateChange?.(false);
+      this.callbacks?.onError?.(this.lastMicError || 'Não foi possível abrir o microfone.');
+      return;
+    }
 
     // 2. Connect to Audio Analyzer so visualizer and mascot move to speech
     if (stream) {

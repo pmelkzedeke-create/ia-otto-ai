@@ -2,25 +2,33 @@
 
 import { IntentResult, MemoryItem, SystemTelemetry, WorkspaceItem, MemoryCategory } from '../types/otto';
 import { DataHubStorage } from './dataHubStorage';
+import { apiFetch, setAccessToken, readSessionToken, ApiAuthError } from './http';
 
-const DEFAULT_SYSTEM_TELEMETRY: SystemTelemetry = {
-  platform: typeof navigator !== 'undefined' ? (navigator.platform || 'Linux x86_64') : 'Linux x86_64',
-  release: '6.6.137',
-  type: 'Linux',
-  arch: 'x64',
-  hostname: 'otto-station',
-  uptimeSeconds: 14280,
-  cpuModel: 'Intel Core i9-13900K / Apple Silicon Neural Engine',
-  cpuCores: typeof navigator !== 'undefined' && navigator.hardwareConcurrency ? navigator.hardwareConcurrency : 16,
-  cpuUsagePercent: 28,
-  totalMemoryBytes: 16 * 1024 * 1024 * 1024,
-  freeMemoryBytes: 9 * 1024 * 1024 * 1024,
-  usedMemoryBytes: 7 * 1024 * 1024 * 1024,
-  memoryUsagePercent: 44,
-  nodeVersion: 'v22.14.0',
+export { ApiAuthError };
+
+/**
+ * Telemetria usada somente quando o servidor local não responde.
+ * Antes existiam valores inventados (i9-13900K, kernel 6.6.137) que a UI
+ * exibia como se fossem o hardware real do usuário.
+ */
+const UNAVAILABLE_SYSTEM_TELEMETRY: SystemTelemetry = {
+  platform: 'indisponível',
+  release: '—',
+  type: '—',
+  arch: '—',
+  hostname: 'servidor local sem resposta',
+  uptimeSeconds: 0,
+  cpuModel: '—',
+  cpuCores: 0,
+  cpuUsagePercent: 0,
+  totalMemoryBytes: 0,
+  freeMemoryBytes: 0,
+  usedMemoryBytes: 0,
+  memoryUsagePercent: 0,
+  nodeVersion: '—',
   serverTime: new Date().toISOString(),
+  available: false,
 };
-
 const DEFAULT_PLANETARY_MEMORIES: MemoryItem[] = [
   {
     id: 'mem_1',
@@ -94,42 +102,54 @@ const DEFAULT_PLANETARY_MEMORIES: MemoryItem[] = [
   },
 ];
 
+
 export class ApiBridge {
+  /** Define manualmente o token de sessão (ex.: quando o app é servido por outro host). */
+  public static setAccessToken(token: string): void {
+    setAccessToken(token);
+  }
+
+  /** Token atualmente em uso (meta tag ou localStorage). */
+  public static getAccessToken(): string {
+    return readSessionToken();
+  }
+
   public static async getHealth() {
     try {
-      const res = await fetch('/api/health');
+      const res = await apiFetch('/api/health');
       const contentType = res.headers.get('content-type') || '';
       if (res.ok && contentType.includes('application/json')) {
         return await res.json();
       }
-      return { status: 'online', providers: { gemini: true, groq: false } };
+      return { status: 'offline', providers: { gemini: false, groq: false } };
     } catch {
-      return { status: 'online', providers: { gemini: true, groq: false } };
+      return { status: 'offline', providers: { gemini: false, groq: false } };
     }
   }
 
   public static async getSystemInfo(): Promise<SystemTelemetry> {
     try {
-      const res = await fetch('/api/system/info');
+      const res = await apiFetch('/api/system/info');
       const contentType = res.headers.get('content-type') || '';
       if (res.ok && contentType.includes('application/json')) {
         const data = await res.json();
         if (data && typeof data === 'object') {
           return {
-            ...DEFAULT_SYSTEM_TELEMETRY,
+            ...UNAVAILABLE_SYSTEM_TELEMETRY,
             ...data,
+            available: true,
           };
         }
       }
     } catch {
       // Graceful local fallback without console.error noise
     }
-    return DEFAULT_SYSTEM_TELEMETRY;
+    return UNAVAILABLE_SYSTEM_TELEMETRY;
   }
 
   public static async listFiles(subpath = ''): Promise<{ currentPath: string; items: WorkspaceItem[] }> {
     try {
-      const res = await fetch(`/api/fs/list?path=${encodeURIComponent(subpath)}`);
+      const res = await apiFetch(`/api/fs/list?path=${encodeURIComponent(subpath)}`);
       const contentType = res.headers.get('content-type') || '';
       if (res.ok && contentType.includes('application/json')) {
         return await res.json();
@@ -148,7 +168,7 @@ export class ApiBridge {
 
   public static async createFolder(name: string, targetPath = ''): Promise<{ success: boolean; message: string; path: string }> {
     try {
-      const res = await fetch('/api/fs/create-folder', {
+      const res = await apiFetch('/api/fs/create-folder', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, targetPath }),
@@ -169,7 +189,7 @@ export class ApiBridge {
 
   public static async writeFile(filename: string, content: string, targetPath = ''): Promise<{ success: boolean; message: string; path: string }> {
     try {
-      const res = await fetch('/api/fs/write-file', {
+      const res = await apiFetch('/api/fs/write-file', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ filename, content, targetPath }),
@@ -190,7 +210,7 @@ export class ApiBridge {
 
   public static async readFile(filename: string, targetPath = ''): Promise<{ success: boolean; filename: string; content: string }> {
     try {
-      const res = await fetch('/api/fs/read-file', {
+      const res = await apiFetch('/api/fs/read-file', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ filename, targetPath }),
@@ -211,7 +231,7 @@ export class ApiBridge {
 
   public static async deleteFile(filename: string, targetPath = ''): Promise<{ success: boolean; message: string }> {
     try {
-      const res = await fetch('/api/fs/delete-file', {
+      const res = await apiFetch('/api/fs/delete-file', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ filename, targetPath }),
@@ -231,7 +251,7 @@ export class ApiBridge {
 
   public static async renameFile(oldName: string, newName: string, targetPath = ''): Promise<{ success: boolean; message: string }> {
     try {
-      const res = await fetch('/api/fs/rename', {
+      const res = await apiFetch('/api/fs/rename', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ oldName, newName, targetPath }),
@@ -243,7 +263,7 @@ export class ApiBridge {
 
   public static async getFileDiff(filename: string, newContent?: string, targetPath = ''): Promise<{ success: boolean; filename: string; exists: boolean; originalContent: string; newContent: string; hasChanges: boolean }> {
     try {
-      const res = await fetch('/api/fs/diff', {
+      const res = await apiFetch('/api/fs/diff', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ filename, newContent, targetPath }),
@@ -259,7 +279,7 @@ export class ApiBridge {
 
   public static async getTextCodeStatus(): Promise<{ configured: boolean; provider: string; model: string; endpoint: string; hasCustomKey: boolean }> {
     try {
-      const res = await fetch('/api/text-code/status');
+      const res = await apiFetch('/api/text-code/status');
       if (res.ok) return await res.json();
     } catch {}
     return { configured: false, provider: 'TextCodeProvider (ROTA B)', model: 'openai/gpt-oss-120b', endpoint: 'https://api.groq.com/openai/v1', hasCustomKey: false };
@@ -267,7 +287,7 @@ export class ApiBridge {
 
   public static async configureTextCode(config: { apiKey?: string; apiUrl?: string; model?: string }) {
     try {
-      const res = await fetch('/api/text-code/config', {
+      const res = await apiFetch('/api/text-code/config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(config),
@@ -279,7 +299,7 @@ export class ApiBridge {
 
   public static async checkRoute(prompt: string) {
     try {
-      const res = await fetch('/api/text-code/route-check', {
+      const res = await apiFetch('/api/text-code/route-check', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt }),
@@ -291,7 +311,7 @@ export class ApiBridge {
 
   public static async generateTextCode(options: { messages: Array<{ role: string; content: string }>; model?: string; temperature?: number }) {
     try {
-      const res = await fetch('/api/text-code/generate', {
+      const res = await apiFetch('/api/text-code/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(options),
@@ -304,7 +324,7 @@ export class ApiBridge {
 
   public static async executeInSandbox(code: string, language: string, filename?: string, timeoutMs?: number) {
     try {
-      const res = await fetch('/api/sandbox/execute', {
+      const res = await apiFetch('/api/sandbox/execute', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code, language, filename, timeoutMs }),
@@ -321,7 +341,7 @@ export class ApiBridge {
     options?: any
   ): Promise<any> {
     try {
-      const res = await fetch('/api/agent/orchestrate', {
+      const res = await apiFetch('/api/agent/orchestrate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt, options }),
@@ -337,7 +357,7 @@ export class ApiBridge {
 
   public static async getAgentTaskState(taskId: string): Promise<any> {
     try {
-      const res = await fetch(`/api/agent/task/${taskId}`);
+      const res = await apiFetch(`/api/agent/task/${taskId}`);
       if (res.ok) return await res.json();
     } catch {}
     return null;
@@ -345,7 +365,7 @@ export class ApiBridge {
 
   public static async executeTerminal(command: string): Promise<{ command: string; stdout: string; stderr: string; exitCode: number; error: string | null }> {
     try {
-      const res = await fetch('/api/terminal/execute', {
+      const res = await apiFetch('/api/terminal/execute', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ command }),
@@ -368,7 +388,7 @@ export class ApiBridge {
 
   public static async executeAgentStep(planId: string, step: any, planTitle?: string): Promise<{ success: boolean; message: string; details?: any }> {
     try {
-      const res = await fetch('/api/agent/execute-step', {
+      const res = await apiFetch('/api/agent/execute-step', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ planId, step, planTitle }),
@@ -388,7 +408,7 @@ export class ApiBridge {
 
   public static async getMemories(): Promise<MemoryItem[]> {
     try {
-      const res = await fetch('/api/memory');
+      const res = await apiFetch('/api/memory');
       const contentType = res.headers.get('content-type') || '';
       if (res.ok && contentType.includes('application/json')) {
         const data = await res.json();
@@ -408,7 +428,7 @@ export class ApiBridge {
     extra?: { title?: string; category?: MemoryCategory; color?: string; tags?: string[] }
   ): Promise<MemoryItem[]> {
     try {
-      const res = await fetch('/api/memory', {
+      const res = await apiFetch('/api/memory', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ key, value, ...extra }),
@@ -426,7 +446,7 @@ export class ApiBridge {
 
   public static async deleteMemory(id: string): Promise<MemoryItem[]> {
     try {
-      const res = await fetch(`/api/memory/${id}`, { method: 'DELETE' });
+      const res = await apiFetch(`/api/memory/${id}`, { method: 'DELETE' });
       const contentType = res.headers.get('content-type') || '';
       if (res.ok && contentType.includes('application/json')) {
         const data = await res.json();
@@ -440,15 +460,120 @@ export class ApiBridge {
 
   public static async clearMemories(): Promise<void> {
     try {
-      await fetch('/api/memory', { method: 'DELETE' });
+      await apiFetch('/api/memory', { method: 'DELETE' });
     } catch {
       // Fallback
     }
   }
 
+  // ---------------------------------------------------------------------
+  // Motor de mídia (ffmpeg)
+  // ---------------------------------------------------------------------
+
+  /** Estado do ffmpeg no servidor: disponível, versão e dica de instalação. */
+  public static async getMediaStatus(refresh = false): Promise<{
+    available: boolean;
+    version: string | null;
+    hint?: string;
+    operations: { id: string; label: string; description: string; accepts: string[]; produces: string }[];
+  } | null> {
+    try {
+      const res = await apiFetch(`/api/media/status${refresh ? '?refresh=1' : ''}`);
+      if (!res.ok) return null;
+      const data = await res.json();
+      return {
+        available: Boolean(data?.engine?.available),
+        version: data?.engine?.version ?? null,
+        hint: data?.engine?.hint,
+        operations: data?.operations || [],
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  /** Envia um arquivo de mídia para o servidor (o ffmpeg só lê media/in). */
+  public static async uploadMedia(
+    name: string,
+    dataUrl: string
+  ): Promise<{ name: string; relativePath: string; sizeBytes: number } | null> {
+    try {
+      const res = await apiFetch('/api/media/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, data: dataUrl }),
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      return data?.file ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  /** Executa uma operação do ffmpeg no servidor. */
+  public static async runMediaOperation(params: {
+    operation: string;
+    input: string;
+    output?: string;
+    options?: Record<string, unknown>;
+    overwrite?: boolean;
+  }): Promise<{
+    ok: boolean;
+    outputName?: string;
+    downloadUrl?: string | null;
+    sizeBytes?: number;
+    durationMs?: number;
+    details?: string;
+    error?: string;
+    code?: string;
+  }> {
+    try {
+      const res = await apiFetch('/api/media/ffmpeg', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params),
+        signal: undefined,
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        return { ok: false, error: data?.error || 'Não consegui processar a mídia.', code: data?.code };
+      }
+      return {
+        ok: true,
+        outputName: data.outputName,
+        downloadUrl: data.downloadUrl,
+        sizeBytes: data.sizeBytes,
+        durationMs: data.durationMs,
+        details: data.details,
+      };
+    } catch (error) {
+      return {
+        ok: false,
+        error:
+          (error as Error)?.name === 'ApiTimeoutError'
+            ? 'A conversão demorou demais e foi cancelada.'
+            : 'Falha de rede ao falar com o motor de mídia.',
+      };
+    }
+  }
+
+  /** Lista os arquivos de mídia que o agente enxerga. */
+  public static async listMediaFiles(): Promise<{ name: string; relativePath: string; sizeBytes: number }[]> {
+    try {
+      const res = await apiFetch('/api/media/list');
+      if (!res.ok) return [];
+      const data = await res.json();
+      return Array.isArray(data?.files) ? data.files : [];
+    } catch {
+      return [];
+    }
+  }
+
   public static async getProjects(): Promise<any[]> {
     try {
-      const res = await fetch('/api/projects');
+      const res = await apiFetch('/api/projects');
       if (res.ok) {
         const data = await res.json();
         return data.projects || [];
@@ -463,7 +588,7 @@ export class ApiBridge {
 
   public static async createProject(project: { name: string; description?: string; color?: string; folderPath?: string; tags?: string[] }) {
     try {
-      const res = await fetch('/api/projects', {
+      const res = await apiFetch('/api/projects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(project),
@@ -475,7 +600,7 @@ export class ApiBridge {
 
   public static async deleteProject(id: string) {
     try {
-      const res = await fetch(`/api/projects/${id}`, { method: 'DELETE' });
+      const res = await apiFetch(`/api/projects/${id}`, { method: 'DELETE' });
       if (res.ok) return await res.json();
     } catch {}
     return { success: false };
@@ -483,7 +608,7 @@ export class ApiBridge {
 
   public static async getScratchpad(): Promise<Record<string, string>> {
     try {
-      const res = await fetch('/api/scratchpad');
+      const res = await apiFetch('/api/scratchpad');
       if (res.ok) {
         const data = await res.json();
         return data.scratchpad || {};
@@ -494,7 +619,7 @@ export class ApiBridge {
 
   public static async setScratchpad(entries: Record<string, string>) {
     try {
-      const res = await fetch('/api/scratchpad', {
+      const res = await apiFetch('/api/scratchpad', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ entries }),
@@ -506,7 +631,7 @@ export class ApiBridge {
 
   public static async clearScratchpad() {
     try {
-      const res = await fetch('/api/scratchpad', { method: 'DELETE' });
+      const res = await apiFetch('/api/scratchpad', { method: 'DELETE' });
       if (res.ok) return await res.json();
     } catch {}
     return { success: false };
@@ -514,7 +639,7 @@ export class ApiBridge {
 
   public static async searchImages(query: string): Promise<any> {
     try {
-      const res = await fetch(`/api/images/search?q=${encodeURIComponent(query)}`);
+      const res = await apiFetch(`/api/images/search?q=${encodeURIComponent(query)}`);
       if (res.ok) {
         return await res.json();
       }
@@ -524,7 +649,7 @@ export class ApiBridge {
 
   public static async getLiveKnowledge(query: string): Promise<any> {
     try {
-      const res = await fetch(`/api/web/knowledge?q=${encodeURIComponent(query)}`);
+      const res = await apiFetch(`/api/web/knowledge?q=${encodeURIComponent(query)}`);
       if (res.ok) {
         return await res.json();
       }
@@ -534,7 +659,7 @@ export class ApiBridge {
 
   public static async getArticlePreview(url: string, title?: string): Promise<{ title: string; extract: string; url: string }> {
     try {
-      const res = await fetch(`/api/web/article-preview?url=${encodeURIComponent(url)}&title=${encodeURIComponent(title || '')}`);
+      const res = await apiFetch(`/api/web/article-preview?url=${encodeURIComponent(url)}&title=${encodeURIComponent(title || '')}`);
       if (res.ok) {
         return await res.json();
       }
@@ -604,7 +729,7 @@ export class ApiBridge {
     };
 
     try {
-      const res = await fetch('/api/otto/intent', {
+      const res = await apiFetch('/api/otto/intent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -640,7 +765,7 @@ export class ApiBridge {
 
     public static async analyzeScreen(imageBase64: string, question?: string): Promise<{ speechResponse: string; analysis: string }> {
     try {
-      const res = await fetch('/api/vision/analyze', {
+      const res = await apiFetch('/api/vision/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ imageBase64, question }),
@@ -658,9 +783,82 @@ export class ApiBridge {
     };
   }
 
+  // ---------------------------------------------------------------------
+  // Provedor de IA configurável pela interface
+  // ---------------------------------------------------------------------
+
+  public static async getProviderStatus(): Promise<{
+    baseUrl: string;
+    model: string;
+    hasKey: boolean;
+    keyPreview: string | null;
+    source: 'interface' | 'env';
+    updatedAt: string | null;
+  } | null> {
+    try {
+      const res = await apiFetch('/api/provider');
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  }
+
+  /** Testa URL + chave e devolve os modelos que o provedor expõe. */
+  public static async testProvider(
+    baseUrl: string,
+    apiKey: string
+  ): Promise<{
+    ok: boolean;
+    models?: { id: string; ownedBy?: string; contextLength?: number; kind: string }[];
+    baseUrl?: string;
+    total?: number;
+    usedKeyPreview?: string | null;
+    error?: string;
+    hint?: string;
+    triedUrl?: string;
+    code?: string;
+  }> {
+    try {
+      const res = await apiFetch(
+        '/api/provider/test',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ baseUrl, apiKey }),
+        },
+        // Teste é diagnóstico: não adianta repetir, o usuário quer saber o motivo agora.
+        { retries: 0, timeoutMs: 20_000 }
+      );
+      const data = await res.json().catch(() => ({}));
+      return { ...data, ok: res.ok && Boolean(data?.ok) };
+    } catch (error) {
+      return { ok: false, error: (error as Error)?.message || 'Falha de rede ao testar o provedor.' };
+    }
+  }
+
+  /** Salva e passa a usar o provedor/modelo escolhido. */
+  public static async applyProvider(
+    baseUrl: string,
+    apiKey: string,
+    model: string
+  ): Promise<{ ok: boolean; message?: string; error?: string; status?: any }> {
+    try {
+      const res = await apiFetch('/api/provider/apply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ baseUrl, apiKey, model }),
+      });
+      const data = await res.json().catch(() => ({}));
+      return { ...data, ok: res.ok && Boolean(data?.ok) };
+    } catch (error) {
+      return { ok: false, error: (error as Error)?.message || 'Falha ao salvar o provedor.' };
+    }
+  }
+
   public static async getGroqStatus(): Promise<{ configured: boolean; provider: string; model: string; status: string }> {
     try {
-      const res = await fetch('/api/groq/status');
+      const res = await apiFetch('/api/groq/status');
       if (res.ok) {
         return await res.json();
       }
@@ -674,7 +872,7 @@ export class ApiBridge {
     enableTools = true
   ): Promise<{ success: boolean; response: string; toolResults?: any[]; model?: string; userMessage?: string }> {
     try {
-      const res = await fetch('/api/groq/chat', {
+      const res = await apiFetch('/api/groq/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt, conversationHistory, enableTools }),
@@ -706,7 +904,7 @@ export class ApiBridge {
     }
   ): Promise<void> {
     try {
-      const res = await fetch('/api/groq/stream', {
+      const res = await apiFetch('/api/groq/stream', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt, conversationHistory }),

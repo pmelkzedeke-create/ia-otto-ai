@@ -1,58 +1,80 @@
 import { Router } from 'express';
-import { loadMemories, saveMemories, ServerMemoryItem } from '../memoryStore.js';
+import {
+  loadMemories,
+  saveMemories,
+  getMemoryStats,
+  normalizeMemory,
+  ServerMemoryItem,
+  MemoryCategory,
+} from '../memoryStore.js';
 
 export const memoryRouter = Router();
 
-// Listar memórias salvas
+const VALID_CATEGORIES: MemoryCategory[] = ['KNOWLEDGE', 'LEARNED', 'RESEARCH', 'SYSTEM'];
+
+/** Lista as memórias com estatísticas prontas para o painel. */
 memoryRouter.get('/api/memory', (req, res) => {
   const memories = loadMemories();
-  res.json({ memories });
+  res.json({ memories, stats: getMemoryStats(memories) });
 });
 
-// Criar ou atualizar memória
+/** Cria ou atualiza uma memória (a chave é a identidade). */
 memoryRouter.post('/api/memory', (req, res) => {
-  const { key, value, title, category = 'LEARNED', tags, color, summary } = req.body;
-  if (!key || !value) {
-    return res.status(400).json({ error: 'Chave e valor necessários' });
+  const { key, value, title, category, tags, color, summary } = req.body || {};
+
+  if (typeof key !== 'string' || typeof value !== 'string' || !key.trim() || !value.trim()) {
+    return res.status(400).json({ error: 'Chave e valor são obrigatórios.' });
+  }
+  if (key.length > 120 || value.length > 4000) {
+    return res.status(413).json({ error: 'Memória muito longa (máx. 120 na chave e 4000 no valor).' });
   }
 
   const memories = loadMemories();
-  const existingIdx = memories.findIndex((m) => m.key.toLowerCase() === key.toLowerCase());
+  const existingIndex = memories.findIndex((m) => m.key.toLowerCase() === key.trim().toLowerCase());
 
-  const categoryColors: Record<string, string> = {
-    KNOWLEDGE: '#38bdf8',
-    LEARNED: '#34d399',
-    RESEARCH: '#f43f5e',
-    SYSTEM: '#fbbf24',
-  };
+  const candidate = normalizeMemory(
+    {
+      id: existingIndex >= 0 ? memories[existingIndex].id : `mem_${Date.now()}`,
+      key: key.trim(),
+      value,
+      title: title || key,
+      category: VALID_CATEGORIES.includes(String(category).toUpperCase() as MemoryCategory)
+        ? (String(category).toUpperCase() as MemoryCategory)
+        : 'LEARNED',
+      summary: summary || value.slice(0, 120),
+      tags: Array.isArray(tags) ? tags : [key.trim().toLowerCase()],
+      color,
+      createdAt: existingIndex >= 0 ? memories[existingIndex].createdAt : new Date().toISOString(),
+    },
+    `mem_${Date.now()}`
+  );
 
-  const itemToSave: ServerMemoryItem = {
-    id: existingIdx >= 0 ? memories[existingIdx].id : `mem_${Date.now()}`,
-    key,
-    value,
-    title: title || key,
-    category: ['KNOWLEDGE', 'LEARNED', 'RESEARCH', 'SYSTEM'].includes(category) ? category : 'LEARNED',
-    summary: summary || value.slice(0, 80),
-    tags: Array.isArray(tags) ? tags : [key.toLowerCase()],
-    color: color || categoryColors[category] || '#38bdf8',
-    createdAt: existingIdx >= 0 ? memories[existingIdx].createdAt : new Date().toISOString(),
-  };
-
-  if (existingIdx >= 0) {
-    memories[existingIdx] = itemToSave;
-  } else {
-    memories.push(itemToSave);
+  if (!candidate) {
+    return res.status(400).json({ error: 'Não foi possível normalizar a memória enviada.' });
   }
 
-  saveMemories(memories);
-  res.json({ success: true, memory: itemToSave, memories });
+  if (existingIndex >= 0) memories[existingIndex] = candidate;
+  else memories.push(candidate);
+
+  const saved = saveMemories(memories);
+  return res.json({
+    success: true,
+    memory: candidate,
+    memories: saved,
+    stats: getMemoryStats(saved),
+  });
 });
 
-// Excluir memória
+/** Remove todas as memórias (usado por "esquecer tudo"). */
+memoryRouter.delete('/api/memory', (req, res) => {
+  const saved = saveMemories([] as ServerMemoryItem[]);
+  res.json({ success: true, memories: saved, stats: getMemoryStats(saved) });
+});
+
+/** Remove uma memória pelo id. */
 memoryRouter.delete('/api/memory/:id', (req, res) => {
   const { id } = req.params;
-  let memories = loadMemories();
-  memories = memories.filter((m) => m.id !== id);
-  saveMemories(memories);
-  res.json({ success: true, memories });
+  const memories = loadMemories().filter((memory) => memory.id !== id);
+  const saved = saveMemories(memories);
+  res.json({ success: true, memories: saved, stats: getMemoryStats(saved) });
 });

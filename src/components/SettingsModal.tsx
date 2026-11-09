@@ -29,13 +29,19 @@ import {
   RespeecherVoice,
 } from '../services/ttsEngine';
 import { desktopOverlayBridge } from '../services/desktopOverlayBridge';
+import { describeMicEnvironment, describeMicError } from '../services/voiceEngine';
 import { ApiBridge } from '../services/apiBridge';
+import { apiFetch } from '../services/http';
+
+type SettingsTab = 'GERAL' | 'VOZ' | 'IA' | 'PERMISSÕES' | 'SISTEMA';
 
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
   settings: OttoSettings;
   onUpdateSettings: (newSettings: Partial<OttoSettings>) => void;
+  /** Aba inicial — usada por deep links e pelos testes de renderização. */
+  initialTab?: SettingsTab;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -43,10 +49,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onClose,
   settings,
   onUpdateSettings,
+  initialTab = 'GERAL',
 }) => {
-  const [activeTab, setActiveTab] = useState<
-    'GERAL' | 'VOZ' | 'IA' | 'PERMISSÕES' | 'SISTEMA'
-  >('GERAL');
+  const [activeTab, setActiveTab] = useState<SettingsTab>(initialTab);
   const [geminiVoices, setGeminiVoices] = useState<GeminiVoice[]>(DEFAULT_GEMINI_VOICES);
   const [elevenVoices, setElevenVoices] = useState<ElevenVoice[]>(DEFAULT_ELEVEN_VOICES);
   const [respeecherVoices, setRespeecherVoices] = useState<RespeecherVoice[]>(DEFAULT_RESPEECHER_VOICES);
@@ -58,6 +63,31 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [apiKeyInput, setApiKeyInput] = useState('');
   const [keySaving, setKeySaving] = useState(false);
   const [keyStatusMsg, setKeyStatusMsg] = useState<string | null>(null);
+
+  // Provedor de IA (URL + chave + lista de modelos)
+  const [providerBaseUrl, setProviderBaseUrl] = useState('https://api.groq.com/openai/v1');
+  const [providerKey, setProviderKey] = useState('');
+  const [providerKeyMasked, setProviderKeyMasked] = useState<string | null>(null);
+  const [providerModel, setProviderModel] = useState('');
+  const [providerTesting, setProviderTesting] = useState(false);
+  const [providerApplying, setProviderApplying] = useState(false);
+  const [providerModels, setProviderModels] = useState<
+    { id: string; ownedBy?: string; contextLength?: number; kind: string }[] | null
+  >(null);
+  const [providerMessage, setProviderMessage] = useState<{
+    kind: 'ok' | 'error';
+    text: string;
+    hint?: string;
+    triedUrl?: string;
+  } | null>(null);
+  const [providerManualModel, setProviderManualModel] = useState('');
+
+  // Diagnóstico de microfone
+  const [micTesting, setMicTesting] = useState(false);
+  const [micResult, setMicResult] = useState<{ kind: 'ok' | 'error' | 'warn'; text: string } | null>(null);
+  const [micLevel, setMicLevel] = useState(0);
+  const [providerSource, setProviderSource] = useState<'interface' | 'env'>('env');
+  const [modelQuery, setModelQuery] = useState('');
 
   // Account & Privacy state
   const [accountEmail, setAccountEmail] = useState('usuario@otto.local');
@@ -78,8 +108,23 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [respeecherAvailable, setRespeecherAvailable] = useState(true);
 
   useEffect(() => {
+    if (!isOpen) return;
+    let alive = true;
+    ApiBridge.getProviderStatus().then((status) => {
+      if (!alive || !status) return;
+      setProviderBaseUrl(status.baseUrl);
+      setProviderModel(status.model);
+      setProviderKeyMasked(status.keyPreview);
+      setProviderSource(status.source);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
     if (isOpen) {
-      setActiveTab('GERAL');
+      setActiveTab(initialTab);
       setApiKeyInput(ttsEngine.getCustomApiKey());
       setRespeecherKeyInput(ttsEngine.getCustomRespeecherApiKey());
       setBrowserVoices(ttsEngine.getBrowserVoices());
@@ -116,7 +161,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     setKeySaving(true);
     setKeyStatusMsg(null);
     try {
-      const res = await fetch('/api/tts/elevenlabs/key', {
+      const res = await apiFetch('/api/tts/elevenlabs/key', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ apiKey: apiKeyInput.trim() }),
@@ -144,7 +189,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     setRespeecherSaving(true);
     setRespeecherStatusMsg(null);
     try {
-      const res = await fetch('/api/tts/respeecher/key', {
+      const res = await apiFetch('/api/tts/respeecher/key', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ apiKey: respeecherKeyInput.trim() }),
@@ -463,6 +508,167 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           {/* TAB: VOZ */}
           {activeTab === 'VOZ' && (
             <div className="flex flex-col gap-3.5 text-xs font-sans">
+              {/* Modo de resposta: falar ou só texto */}
+              <div className="flex flex-col gap-2.5 p-3.5 rounded-2xl bg-white/[0.04] border border-white/10">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <div className="text-sm font-semibold text-white flex items-center gap-2">
+                      <Volume2 className="w-4 h-4 text-slate-300" />
+                      <span>Como o OTTO responde no chat</span>
+                    </div>
+                    <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">
+                      "Só texto" deixa o chat discreto como o Claude: nada é falado em voz alta.
+                      O botão <strong>Ouvir</strong> de cada mensagem continua funcionando.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-black/40 border border-white/10">
+                  {[
+                    { id: false, label: 'Voz + texto', hint: 'Fala cada resposta' },
+                    { id: true, label: 'Só texto', hint: 'Nunca fala sozinho' },
+                  ].map((option) => {
+                    const active = Boolean(settings.textOnlyMode) === option.id;
+                    return (
+                      <button
+                        key={String(option.id)}
+                        type="button"
+                        onClick={() => {
+                          onUpdateSettings({ textOnlyMode: option.id });
+                          if (option.id) ttsEngine.stop?.();
+                        }}
+                        title={option.hint}
+                        className={`px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                          active
+                            ? 'bg-white text-slate-950 shadow-[0_2px_10px_rgba(0,0,0,0.4)]'
+                            : 'text-slate-300 hover:bg-white/10'
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Dentro de outra página o navegador costuma negar microfone e voz */}
+                {describeMicEnvironment().inIframe && (
+                  <button
+                    type="button"
+                    onClick={() => window.open(window.location.href, '_blank', 'noopener,noreferrer')}
+                    className="text-[11px] px-3 py-2 rounded-xl border border-amber-400/40 bg-amber-500/10 text-amber-200 hover:bg-amber-500/20 transition-all cursor-pointer text-left leading-relaxed"
+                  >
+                    Você está vendo o OTTO dentro de outra página. Microfone e voz só funcionam em aba própria —
+                    <span className="underline font-semibold"> abrir agora</span>.
+                  </button>
+                )}
+
+                {/* Diagnóstico do microfone: responde "por que ele não me ouve?" */}
+                <div className="flex flex-col gap-2 pt-1">
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      disabled={micTesting}
+                      onClick={async () => {
+                        setMicTesting(true);
+                        setMicResult(null);
+                        setMicLevel(0);
+
+                        const env = describeMicEnvironment();
+                        const ambiente = [
+                          env.secureContext ? 'conexão segura ✓' : 'sem HTTPS ✗',
+                          env.inIframe ? 'dentro de outra página (iframe) ✗' : 'aba própria ✓',
+                          env.speechApi ? 'reconhecimento nativo ✓' : 'sem reconhecimento nativo (usa servidor)',
+                        ].join(' · ');
+
+                        if (!env.hasMediaDevices) {
+                          setMicResult({ kind: 'error', text: `${describeMicError(new Error('sem mediaDevices'))}\n${ambiente}` });
+                          setMicTesting(false);
+                          return;
+                        }
+
+                        try {
+                          const stream = await navigator.mediaDevices.getUserMedia({
+                            audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+                          });
+
+                          const label = stream.getAudioTracks()[0]?.label || 'microfone padrão';
+                          const context = new AudioContext();
+                          const source = context.createMediaStreamSource(stream);
+                          const analyser = context.createAnalyser();
+                          analyser.fftSize = 512;
+                          source.connect(analyser);
+
+                          const buffer = new Uint8Array(analyser.frequencyBinCount);
+                          let peak = 0;
+                          const started = Date.now();
+
+                          await new Promise<void>((resolve) => {
+                            const tick = () => {
+                              analyser.getByteTimeDomainData(buffer);
+                              let sum = 0;
+                              for (let i = 0; i < buffer.length; i += 1) {
+                                const value = (buffer[i] - 128) / 128;
+                                sum += value * value;
+                              }
+                              const level = Math.min(1, Math.sqrt(sum / buffer.length) * 4);
+                              peak = Math.max(peak, level);
+                              setMicLevel(level);
+
+                              if (Date.now() - started < 3000) requestAnimationFrame(tick);
+                              else resolve();
+                            };
+                            tick();
+                          });
+
+                          stream.getTracks().forEach((track) => track.stop());
+                          await context.close().catch(() => {});
+
+                          setMicResult({
+                            kind: peak > 0.04 ? 'ok' : 'warn',
+                            text:
+                              (peak > 0.04
+                                ? `Microfone funcionando: "${label}" captou sua voz.`
+                                : `Microfone abriu ("${label}"), mas não captei som. Fale mais perto ou confira o dispositivo de entrada do sistema.`) +
+                              `\n${ambiente}`,
+                          });
+                        } catch (error) {
+                          setMicResult({ kind: 'error', text: `${describeMicError(error)}\n${ambiente}` });
+                        } finally {
+                          setMicTesting(false);
+                          setMicLevel(0);
+                        }
+                      }}
+                      className="flex-1 px-3 py-2 rounded-xl text-xs font-semibold bg-cyan-500/15 border border-cyan-400/40 text-cyan-200 hover:bg-cyan-500/25 transition-all cursor-pointer active:scale-[0.99] disabled:opacity-50"
+                    >
+                      {micTesting ? 'Testando… fale algo' : 'Testar microfone'}
+                    </button>
+                  </div>
+
+                  {micTesting && (
+                    <div className="h-1.5 rounded-full bg-black/50 overflow-hidden">
+                      <div
+                        className="h-full bg-cyan-400 transition-[width] duration-75"
+                        style={{ width: `${Math.round(micLevel * 100)}%` }}
+                      />
+                    </div>
+                  )}
+
+                  {micResult && (
+                    <div
+                      className={`text-[11px] px-3 py-2 rounded-xl border leading-relaxed whitespace-pre-line ${
+                        micResult.kind === 'ok'
+                          ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-200'
+                          : micResult.kind === 'warn'
+                          ? 'bg-amber-500/10 border-amber-500/30 text-amber-200'
+                          : 'bg-rose-500/10 border-rose-500/30 text-rose-200'
+                      }`}
+                    >
+                      {micResult.text}
+                    </div>
+                  )}
+                </div>
+              </div>
+
               {/* Cascade Info Card */}
               <div className="p-3.5 rounded-2xl bg-white/[0.04] border border-white/15 text-slate-200 text-xs flex flex-col gap-1.5">
                 <div className="font-semibold flex items-center gap-2 text-white">
@@ -708,6 +914,249 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           {/* TAB: IA & INTELIGÊNCIA */}
           {activeTab === 'IA' && (
             <div className="flex flex-col gap-4 text-xs text-slate-300 font-sans">
+              {/* 0. Provedor de IA: URL + chave + modelos */}
+              <div className="flex flex-col gap-3 p-3.5 rounded-2xl bg-white/[0.04] border border-white/10">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="font-semibold text-white flex items-center gap-2">
+                      <Cloud className="w-4 h-4 text-slate-300" />
+                      <span>Provedor de IA</span>
+                    </div>
+                    <p className="text-[11px] text-slate-400 leading-relaxed mt-1">
+                      Qualquer API compatível com OpenAI (Groq, OpenAI, Together, Ollama local…).
+                      Teste a conexão, escolha o modelo e confirme.
+                    </p>
+                  </div>
+                  <span
+                    className={`text-[10px] font-mono uppercase px-2 py-0.5 rounded-full border shrink-0 ${
+                      providerSource === 'interface'
+                        ? 'text-emerald-300 bg-emerald-500/10 border-emerald-500/30'
+                        : 'text-slate-300 bg-white/10 border-white/20'
+                    }`}
+                  >
+                    {providerSource === 'interface' ? 'salvo aqui' : '.env'}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 gap-2">
+                  <label className="text-[11px] text-slate-400">
+                    URL da API
+                    <input
+                      type="url"
+                      value={providerBaseUrl}
+                      onChange={(e) => {
+                        setProviderBaseUrl(e.target.value);
+                        setProviderModels(null);
+                        setProviderMessage(null);
+                      }}
+                      placeholder="https://api.groq.com/openai/v1"
+                      spellCheck={false}
+                      className="mt-1 w-full bg-[#12151c] border border-white/15 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-cyan-400"
+                    />
+                  </label>
+
+                  <label className="text-[11px] text-slate-400">
+                    API key
+                    <input
+                      type="password"
+                      value={providerKey}
+                      onChange={(e) => {
+                        setProviderKey(e.target.value);
+                        setProviderModels(null);
+                        setProviderMessage(null);
+                      }}
+                      placeholder={
+                        providerKeyMasked
+                          ? `vazio = usa a chave salva (${providerKeyMasked})`
+                          : 'gsk_…'
+                      }
+                      autoComplete="off"
+                      spellCheck={false}
+                      className="mt-1 w-full bg-[#12151c] border border-white/15 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-cyan-400"
+                    />
+                  </label>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    disabled={providerTesting || !providerBaseUrl.trim()}
+                    onClick={async () => {
+                      setProviderTesting(true);
+                      setProviderMessage(null);
+                      const result = await ApiBridge.testProvider(providerBaseUrl.trim(), providerKey.trim());
+                      setProviderTesting(false);
+
+                      if (!result.ok) {
+                        setProviderModels(null);
+                        setProviderMessage({
+                          kind: 'error',
+                          text: result.error || 'O provedor não respondeu bem.',
+                          hint: result.hint,
+                          triedUrl: result.triedUrl,
+                        });
+                        return;
+                      }
+
+                      const models = result.models || [];
+                      setProviderModels(models);
+                      setProviderMessage({
+                        kind: 'ok',
+                        text: `Conexão OK — ${models.length} modelo(s) disponível(is)${
+                          result.usedKeyPreview ? ` · chave ${result.usedKeyPreview}` : ''
+                        }. Escolha um e confirme.`,
+                      });
+                    }}
+                    className="flex-1 px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed bg-cyan-500/15 border border-cyan-400/40 text-cyan-200 hover:bg-cyan-500/25"
+                  >
+                    {providerTesting ? 'Testando…' : 'Testar conexão'}
+                  </button>
+
+                  {providerModels && (
+                    <button
+                      type="button"
+                      disabled={!providerModel || providerApplying}
+                      onClick={async () => {
+                        setProviderApplying(true);
+                        setProviderMessage(null);
+                        const result = await ApiBridge.applyProvider(
+                          providerBaseUrl.trim(),
+                          providerKey.trim(),
+                          providerModel
+                        );
+                        setProviderApplying(false);
+                        if (!result.ok) {
+                          setProviderMessage({ kind: 'error', text: result.error || 'Não consegui salvar.' });
+                          return;
+                        }
+                        setProviderSource('interface');
+                        setProviderKey('');
+                        setProviderKeyMasked(result.status?.keyPreview || providerKeyMasked);
+                        setProviderMessage({ kind: 'ok', text: result.message || 'Provedor atualizado.' });
+                      }}
+                      className="px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed bg-white text-slate-950 hover:bg-slate-200"
+                    >
+                      {providerApplying ? 'Salvando…' : 'OK'}
+                    </button>
+                  )}
+                </div>
+
+                {providerMessage && (
+                  <div
+                    className={`text-[11px] px-3 py-2 rounded-xl border leading-relaxed flex flex-col gap-1 ${
+                      providerMessage.kind === 'ok'
+                        ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-200'
+                        : 'bg-rose-500/10 border-rose-500/30 text-rose-200'
+                    }`}
+                  >
+                    <span className="font-semibold">{providerMessage.text}</span>
+                    {providerMessage.hint && (
+                      <span className="text-[10px] opacity-90 leading-relaxed">{providerMessage.hint}</span>
+                    )}
+                    {providerMessage.triedUrl && (
+                      <span className="text-[10px] font-mono opacity-70 break-all">
+                        GET {providerMessage.triedUrl}
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {/* Sem teste (ex: servidor sem saída para internet), salva na mão */}
+                {!providerModels && (
+                  <div className="flex flex-col gap-1.5 pt-2 border-t border-white/10">
+                    <label className="text-[11px] text-slate-400">
+                      Ou informe o modelo direto (sem testar)
+                      <div className="flex items-center gap-2 mt-1">
+                        <input
+                          type="text"
+                          value={providerManualModel}
+                          onChange={(e) => setProviderManualModel(e.target.value)}
+                          placeholder="openai/gpt-oss-120b"
+                          spellCheck={false}
+                          className="flex-1 bg-[#12151c] border border-white/15 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-cyan-400"
+                        />
+                        <button
+                          type="button"
+                          disabled={providerApplying || !providerManualModel.trim() || !providerBaseUrl.trim()}
+                          onClick={async () => {
+                            setProviderApplying(true);
+                            setProviderMessage(null);
+                            const result = await ApiBridge.applyProvider(
+                              providerBaseUrl.trim(),
+                              providerKey.trim(),
+                              providerManualModel.trim()
+                            );
+                            setProviderApplying(false);
+                            if (!result.ok) {
+                              setProviderMessage({ kind: 'error', text: result.error || 'Não consegui salvar.' });
+                              return;
+                            }
+                            setProviderSource('interface');
+                            setProviderModel(providerManualModel.trim());
+                            setProviderKey('');
+                            setProviderKeyMasked(result.status?.keyPreview || providerKeyMasked);
+                            setProviderMessage({ kind: 'ok', text: result.message || 'Provedor salvo.' });
+                          }}
+                          className="px-3 py-2 rounded-xl text-xs font-bold bg-white text-slate-950 hover:bg-slate-200 transition-all cursor-pointer active:scale-[0.99] disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+                        >
+                          Salvar
+                        </button>
+                      </div>
+                    </label>
+                  </div>
+                )}
+
+                {providerModels && (
+                  <div className="flex flex-col gap-2 pt-2 border-t border-white/10">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[11px] text-slate-400">
+                        Modelos ({providerModels.filter((m) => m.kind === 'chat').length} de conversa)
+                      </span>
+                      <input
+                        value={modelQuery}
+                        onChange={(e) => setModelQuery(e.target.value)}
+                        placeholder="filtrar…"
+                        className="w-32 bg-[#12151c] border border-white/15 rounded-lg px-2 py-1 text-[11px] text-white focus:outline-none focus:border-cyan-400 font-mono"
+                      />
+                    </div>
+
+                    <div className="max-h-56 overflow-y-auto flex flex-col gap-1 pr-1">
+                      {providerModels
+                        .filter((m) => m.id.toLowerCase().includes(modelQuery.toLowerCase()))
+                        .map((m) => {
+                          const selected = m.id === providerModel;
+                          return (
+                            <button
+                              key={m.id}
+                              type="button"
+                              onClick={() => setProviderModel(m.id)}
+                              className={`text-left px-3 py-2 rounded-xl border transition-all flex items-center justify-between gap-2 cursor-pointer ${
+                                selected
+                                  ? 'bg-white/15 border-white/50 text-white'
+                                  : 'bg-black/30 border-white/10 text-slate-300 hover:bg-white/[0.08]'
+                              }`}
+                            >
+                              <span className="flex items-center gap-2 min-w-0">
+                                <span
+                                  className={`w-3 h-3 rounded-full border shrink-0 flex items-center justify-center ${
+                                    selected ? 'border-white bg-white' : 'border-white/40'
+                                  }`}
+                                >
+                                  {selected && <Check className="w-2.5 h-2.5 text-slate-950" strokeWidth={3} />}
+                                </span>
+                                <span className="font-mono text-[11px] truncate">{m.id}</span>
+                              </span>
+                              <span className="text-[10px] text-slate-500 font-mono shrink-0">
+                                {m.kind !== 'chat' ? m.kind : m.contextLength ? `${Math.round(m.contextLength / 1000)}k` : ''}
+                              </span>
+                            </button>
+                          );
+                        })}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* 1. Personalidade Configurável */}
               <div className="flex flex-col gap-2 p-3.5 rounded-2xl bg-white/[0.04] border border-white/10">
                 <div className="flex items-center justify-between">
@@ -873,7 +1322,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <input
                       type="text"
                       defaultValue="openai/gpt-oss-120b"
-                      placeholder="ex: openai/gpt-oss-120b, qwen/qwen-2.5-coder-32b, etc."
+                      placeholder="openai/gpt-oss-120b (raciocínio) ou openai/gpt-oss-20b (rápido)"
                       className="w-full bg-[#12151c] border border-white/15 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono"
                     />
                   </div>

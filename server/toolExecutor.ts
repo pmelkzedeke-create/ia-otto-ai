@@ -6,6 +6,9 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { CodeSandbox } from './codeSandbox.js';
 import { isCommandAllowed } from './security.js';
+import { isInside } from './paths.js';
+import { evaluateExpression } from './mathEval.js';
+import { MediaError, runMediaOperation, type MediaOperation } from './mediaTools.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -187,23 +190,18 @@ export async function executeGroqTool(name: string, rawArgs: string | Record<str
 
       case 'calculator': {
         const expr = args.expression || args.expr || '0';
-        // Safe math evaluation
-        const sanitized = expr.replace(/[^0-9+\-*/().\s^%sqrt]/g, '');
-        let value: number = 0;
-        try {
-          const fn = new Function(`return (${sanitized.replace(/sqrt\(([^)]+)\)/g, 'Math.sqrt($1)')})`);
-          value = fn();
-        } catch {
-          value = 0;
-        }
+        // Avaliação matemática segura (parser próprio, sem eval/new Function)
+        const { value, error } = evaluateExpression(String(expr));
 
         return {
           toolName: 'calculator',
-          success: true,
+          success: !error,
           result: {
             expression: expr,
             evaluatedResult: value,
+            ...(error ? { warning: error } : {}),
           },
+          ...(error ? { error } : {}),
         };
       }
 
@@ -216,7 +214,7 @@ export async function executeGroqTool(name: string, rawArgs: string | Record<str
         const normalized = filename.replace(/\\/g, '/').replace(/^\/+/, '');
         const fullPath = path.resolve(WORKSPACE_DIR, normalized);
 
-        if (!fullPath.startsWith(WORKSPACE_DIR)) {
+        if (!isInside(WORKSPACE_DIR, fullPath)) {
           return { toolName: 'read_file', success: false, result: null, error: 'Acesso fora do workspace negado.' };
         }
 
@@ -247,7 +245,7 @@ export async function executeGroqTool(name: string, rawArgs: string | Record<str
         const normalized = filename.replace(/\\/g, '/').replace(/^\/+/, '');
         const fullPath = path.resolve(WORKSPACE_DIR, normalized);
 
-        if (!fullPath.startsWith(WORKSPACE_DIR)) {
+        if (!isInside(WORKSPACE_DIR, fullPath)) {
           return { toolName: 'write_file', success: false, result: null, error: 'Acesso fora do workspace negado.' };
         }
 
@@ -273,7 +271,7 @@ export async function executeGroqTool(name: string, rawArgs: string | Record<str
         const sanitized = folderName.replace(/[<>:"/\\|?*]/g, '').trim();
         const fullPath = path.resolve(WORKSPACE_DIR, sanitized);
 
-        if (!fullPath.startsWith(WORKSPACE_DIR)) {
+        if (!isInside(WORKSPACE_DIR, fullPath)) {
           return { toolName: 'create_folder', success: false, result: null, error: 'Acesso negado fora do workspace.' };
         }
 
@@ -289,6 +287,51 @@ export async function executeGroqTool(name: string, rawArgs: string | Record<str
             createdPath: fullPath,
           },
         };
+      }
+
+      case 'ffmpeg_media': {
+        const operation = String(args.operation || '').trim() as MediaOperation;
+        const input = String(args.input || args.file || '').trim();
+
+        if (!operation || !input) {
+          return {
+            toolName: 'ffmpeg_media',
+            success: false,
+            result: null,
+            error: 'Informe a operação e o arquivo de entrada.',
+          };
+        }
+
+        try {
+          const media = await runMediaOperation({
+            operation,
+            input,
+            output: args.output ? String(args.output) : undefined,
+            options: args.options && typeof args.options === 'object' ? args.options : {},
+          });
+
+          return {
+            toolName: 'ffmpeg_media',
+            success: true,
+            result: {
+              operation: media.operation,
+              output: media.outputName,
+              downloadUrl: media.outputName
+                ? `/api/media/file/out/${encodeURIComponent(media.outputName)}`
+                : null,
+              sizeBytes: media.sizeBytes,
+              durationMs: media.durationMs,
+              engine: media.engine,
+              details: media.details,
+            },
+          };
+        } catch (mediaError) {
+          const message =
+            mediaError instanceof MediaError
+              ? mediaError.message
+              : `Falha no ffmpeg: ${(mediaError as Error)?.message || String(mediaError)}`;
+          return { toolName: 'ffmpeg_media', success: false, result: null, error: message };
+        }
       }
 
       case 'execute_command': {

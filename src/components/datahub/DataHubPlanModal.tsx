@@ -55,8 +55,8 @@ export const DataHubPlanModal: React.FC<DataHubPlanModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl animate-fade-in font-sans">
-      <div className="relative w-full max-w-xl rounded-[28px] glass-medium border border-white/20 shadow-[0_25px_70px_rgba(0,0,0,0.9)] overflow-hidden flex flex-col max-h-[88vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl dh-backdrop font-sans">
+      <div className="relative w-full max-w-xl rounded-[28px] glass-medium border border-white/20 shadow-[0_25px_70px_rgba(0,0,0,0.9)] overflow-hidden flex flex-col max-h-[88vh] dh-panel">
         {/* Header */}
         <div className="p-4 sm:p-5 border-b border-white/10 flex items-center justify-between bg-white/[0.04]">
           <div className="flex items-center gap-2.5">

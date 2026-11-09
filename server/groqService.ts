@@ -1,7 +1,8 @@
-// Centralized Groq Service for Llama & Open-Source LLM Integration
+// Groq Service — modelos GPT-OSS (OpenAI open-weights) servidos pela GroqCloud
 // Provider: GroqCloud
 // API Endpoint: https://api.groq.com/openai/v1
-// Model Default: llama-3.3-70b-versatile
+// Model Default: openai/gpt-oss-120b (raciocínio e ferramentas)
+// Model Fast:    openai/gpt-oss-20b  (respostas rápidas e tarefas curtas)
 
 import dotenv from 'dotenv';
 import { buildDynamicSystemPrompt } from './systemPrompt.js';
@@ -34,11 +35,21 @@ export interface GroqToolDefinition {
   };
 }
 
+export type GroqTier = 'deep' | 'fast';
+
 export interface GroqChatOptions {
   messages: GroqMessage[];
+  /** id completo do modelo (ex: openai/gpt-oss-120b) ou apelido ("120b", "20b"). */
   model?: string;
+  /** Escolhe o modelo pelo peso da tarefa quando `model` não é informado. */
+  tier?: GroqTier;
   temperature?: number;
+  /** Teto de tokens de saída (vai como `max_completion_tokens`, exigido pelo GPT-OSS). */
   maxTokens?: number;
+  /** GPT-OSS é um modelo de raciocínio: low gasta menos, high pensa mais. */
+  reasoningEffort?: 'low' | 'medium' | 'high';
+  /** Modo JSON nativo da Groq. */
+  responseFormat?: 'text' | 'json';
   tools?: GroqToolDefinition[];
   tool_choice?: 'auto' | 'none' | 'required';
 }
@@ -154,6 +165,48 @@ export const AVAILABLE_GROQ_TOOLS: GroqToolDefinition[] = [
   {
     type: 'function',
     function: {
+      name: 'ffmpeg_media',
+      description:
+        'Processa áudio, vídeo e imagens com o ffmpeg: extrair áudio, converter formato, comprimir, gerar thumbnail, cortar trecho, criar GIF, extrair quadros, normalizar volume ou analisar metadados. Use quando o usuário pedir para transformar uma mídia que já está no OTTO (media/in).',
+      parameters: {
+        type: 'object',
+        properties: {
+          operation: {
+            type: 'string',
+            enum: [
+              'extract_audio',
+              'convert',
+              'compress',
+              'thumbnail',
+              'trim',
+              'to_gif',
+              'extract_frames',
+              'normalize_audio',
+              'probe',
+            ],
+            description: 'Operação desejada.',
+          },
+          input: {
+            type: 'string',
+            description: 'Nome ou caminho do arquivo de entrada dentro de otto_workspace/media (ex: "video.mp4" ou "in/video.mp4").',
+          },
+          output: {
+            type: 'string',
+            description: 'Nome do arquivo de saída, com extensão (ex: "audio.mp3"). Opcional.',
+          },
+          options: {
+            type: 'object',
+            description:
+              'Ajustes opcionais: start/end/duration (tempo), crf, height, fps, width, quality, preset.',
+          },
+        },
+        required: ['operation', 'input'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
       name: 'execute_command',
       description: 'Executa um comando no terminal do computador de forma segura.',
       parameters: {
@@ -171,27 +224,118 @@ export const AVAILABLE_GROQ_TOOLS: GroqToolDefinition[] = [
 ];
 
 export class GroqService {
-  private static get GROQ_ENDPOINT(): string {
-    return 'https://api.groq.com/openai/v1/chat/completions';
+  /** Base da API; pode ser trocada por um proxy compatível via GROQ_BASE_URL. */
+  private static get GROQ_BASE(): string {
+    return (process.env.GROQ_BASE_URL || 'https://api.groq.com/openai/v1').replace(/\/+$/, '');
   }
 
-  private static CANDIDATE_MODELS = [
-    'llama-3.3-70b-versatile',
-    'llama-3.1-8b-instant',
-  ];
+  private static get GROQ_ENDPOINT(): string {
+    return `${this.GROQ_BASE}/chat/completions`;
+  }
+
+  /** 120b raciocina e usa ferramentas; 20b é o rápido/barato. */
+  public static readonly DEEP_MODEL = 'openai/gpt-oss-120b';
+  public static readonly FAST_MODEL_ID = 'openai/gpt-oss-20b';
+
+  private static CANDIDATE_MODELS = ['openai/gpt-oss-120b', 'openai/gpt-oss-20b'];
 
   private static groqCooldownUntil = 0;
 
+  /**
+   * Aceita id completo, apelido curto ("120b", "20b", "oss 120b") ou nome de variável
+   * de ambiente. Devolve sempre um id válido da Groq.
+   */
   public static resolveModel(modelInput?: string): string {
-    const raw = modelInput || process.env.AI_MODEL || 'llama-3.3-70b-versatile';
-    if (!raw || typeof raw !== 'string' || raw.startsWith('gsk_') || raw.includes('gpt-oss')) {
-      return 'llama-3.3-70b-versatile';
+    const raw = String(modelInput || process.env.AI_MODEL || '').trim();
+
+    // chave colada por engano no campo de modelo (nunca repercutir em DEFAULT_MODEL: recorreria)
+    if (!raw || raw.startsWith('gsk_')) return this.DEEP_MODEL;
+
+    const key = raw.toLowerCase().replace(/[\s_]+/g, '-').replace(/^openai\//, '');
+
+    if (key === '20b' || key === 'gpt-oss-20b' || key === 'oss-20b' || key === 'gpt-20b') {
+      return this.FAST_MODEL_ID;
     }
-    return raw.trim();
+    if (key === '120b' || key === 'gpt-oss-120b' || key === 'oss-120b' || key === 'gpt-120b') {
+      return this.DEEP_MODEL;
+    }
+
+    // qualquer outro modelo servido pela Groq (qwen, kimi, whisper…) passa direto
+    return raw;
+  }
+
+  /** Modelo do tier, respeitando AI_MODEL / AI_MODEL_FAST do .env. */
+  public static modelForTier(tier: GroqTier = 'deep'): string {
+    if (tier === 'fast') {
+      const raw = String(process.env.AI_MODEL_FAST || '').trim();
+      return raw && !raw.startsWith('gsk_') ? this.resolveModel(raw) : this.FAST_MODEL_ID;
+    }
+    return this.DEFAULT_MODEL;
+  }
+
+  public static get FAST_MODEL(): string {
+    return this.modelForTier('fast');
   }
 
   public static get DEFAULT_MODEL(): string {
-    return this.resolveModel(process.env.AI_MODEL);
+    const raw = String(process.env.AI_MODEL || '').trim();
+    return raw && !raw.startsWith('gsk_') ? this.resolveModel(raw) : this.DEEP_MODEL;
+  }
+
+  /** fetch falhou antes de qualquer HTTP: DNS, TLS, proxy, firewall. */
+  private static isNetworkError(err: any): boolean {
+    if (!err) return false;
+    if (err.name === 'TypeError' && /fetch failed/i.test(String(err.message))) return true;
+    const code = err?.cause?.code || err?.code;
+    return [
+      'ENOTFOUND',
+      'ECONNREFUSED',
+      'ECONNRESET',
+      'ETIMEDOUT',
+      'EAI_AGAIN',
+      'UNABLE_TO_VERIFY_LEAF_SIGNATURE',
+      'CERT_HAS_EXPIRED',
+      'DEPTH_ZERO_SELF_SIGNED_CERT',
+      'UND_ERR_CONNECT_TIMEOUT',
+    ].includes(String(code));
+  }
+
+  /**
+   * Monta o corpo da requisição. Separado do envio para poder ser testado sem rede.
+   */
+  public static buildPayload(options: GroqChatOptions, model: string): Record<string, any> {
+    const payload: Record<string, any> = {
+      model,
+      messages: this.manageContext(options.messages),
+      temperature: options.temperature ?? 0.3,
+    };
+
+    if (options.maxTokens) {
+      // O GPT-OSS rejeita `max_tokens`; o campo correto na Groq é max_completion_tokens.
+      payload.max_completion_tokens = options.maxTokens;
+    }
+
+    if (options.reasoningEffort) {
+      payload.reasoning_effort = options.reasoningEffort;
+    }
+
+    if (options.responseFormat === 'json') {
+      payload.response_format = { type: 'json_object' };
+    }
+
+    if (options.tools && options.tools.length > 0) {
+      payload.tools = options.tools;
+      payload.tool_choice = options.tool_choice || 'auto';
+      // GPT-OSS não suporta chamadas paralelas: uma ferramenta por vez.
+      payload.parallel_tool_calls = false;
+    }
+
+    return payload;
+  }
+
+  /** Depois de trocar provedor/modelo, uma falha antiga não deve mais bloquear. */
+  public static resetCooldown(): void {
+    this.groqCooldownUntil = 0;
   }
 
   public static get API_KEY(): string {
@@ -229,25 +373,14 @@ export class GroqService {
       throw new Error('GROQ_COOLDOWN: Groq temporariamente indisponível.');
     }
 
-    const requestedModel = this.resolveModel(options.model);
+    const requestedModel = options.model
+      ? this.resolveModel(options.model)
+      : this.modelForTier(options.tier);
     const modelsToTry = Array.from(new Set([requestedModel, ...this.CANDIDATE_MODELS]));
     const managedMessages = this.manageContext(options.messages);
 
     for (const model of modelsToTry) {
-      const payload: any = {
-        model,
-        messages: managedMessages,
-        temperature: options.temperature ?? 0.3,
-      };
-
-      if (options.maxTokens) {
-        payload.max_tokens = options.maxTokens;
-      }
-
-      if (options.tools && options.tools.length > 0) {
-        payload.tools = options.tools;
-        payload.tool_choice = options.tool_choice || 'auto';
-      }
+      const payload = this.buildPayload({ ...options, messages: managedMessages }, model);
 
       try {
         const response = await fetch(this.GROQ_ENDPOINT, {
@@ -305,15 +438,25 @@ export class GroqService {
           usage: data.usage,
         };
       } catch (err: any) {
+        // Erro de rede não se resolve trocando de modelo: para aqui e explica o que houve.
+        if (this.isNetworkError(err)) {
+          throw new Error(
+            `GROQ_NETWORK_ERROR: Não consegui falar com a Groq (${err?.cause?.code || err?.message || 'sem conexão'}). ` +
+              'Verifique a internet, proxy/firewall ou GROQ_BASE_URL.'
+          );
+        }
+
         if (err?.message?.startsWith('GROQ_') && !err?.message?.includes('404')) {
           throw err;
         }
       }
     }
 
-    // All candidate models failed with 404 or model_not_found
-    this.groqCooldownUntil = Date.now() + 5 * 60 * 1000; // 5 minute cooldown
-    throw new Error('GROQ_MODELS_UNAVAILABLE: Nenhum modelo acessível na chave de API do Groq.');
+    // Só chega aqui quando TODOS os modelos responderam 404/model_not_found.
+    this.groqCooldownUntil = Date.now() + 5 * 60 * 1000;
+    throw new Error(
+      'GROQ_MODELS_UNAVAILABLE: a chave não tem acesso aos modelos openai/gpt-oss-120b e openai/gpt-oss-20b.'
+    );
   }
 
   /**
@@ -334,20 +477,11 @@ export class GroqService {
       return;
     }
 
-    const model = this.resolveModel(options.model);
-    const managedMessages = this.manageContext(options.messages);
-
-    const payload: any = {
-      model,
-      messages: managedMessages,
-      temperature: options.temperature ?? 0.3,
+    const model = options.model ? this.resolveModel(options.model) : this.modelForTier(options.tier);
+    const payload = {
+      ...this.buildPayload(options, model),
       stream: true,
     };
-
-    if (options.tools && options.tools.length > 0) {
-      payload.tools = options.tools;
-      payload.tool_choice = options.tool_choice || 'auto';
-    }
 
     try {
       const response = await fetch(this.GROQ_ENDPOINT, {
