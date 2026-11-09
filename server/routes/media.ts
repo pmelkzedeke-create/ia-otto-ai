@@ -88,6 +88,8 @@ mediaRouter.post(
 mediaRouter.post('/api/media/ffmpeg', async (req, res) => {
   try {
     const { operation, input, output, options, overwrite, timeoutMs } = req.body || {};
+    // `file` é o nome que a ação do chat usa; aceita os dois.
+    const source = input || (req.body || {}).file || (req.body || {}).filename;
 
     if (!operation || typeof operation !== 'string') {
       return res.status(400).json({ error: 'Informe a operação (ex: extract_audio).' });
@@ -95,7 +97,7 @@ mediaRouter.post('/api/media/ffmpeg', async (req, res) => {
 
     const result = await runMediaOperation({
       operation: operation as MediaOperation,
-      input: String(input || ''),
+      input: String(source || ''),
       output: output ? String(output) : undefined,
       options: options && typeof options === 'object' ? options : {},
       overwrite: Boolean(overwrite),
