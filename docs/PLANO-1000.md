@@ -1442,3 +1442,28 @@ formato do payload — incluindo a garantia de que `max_tokens` nunca aparece. `
 build OK, `/api/groq/status` respondendo `ready` com os dois modelos. A chamada real não pôde
 ser feita deste ambiente: a rede daqui bloqueia `api.groq.com` (ECONNRESET no handshake TLS),
 o que agora aparece como `GROQ_NETWORK_ERROR` em vez de erro de modelo.
+
+---
+
+## Anexo H · Modo local (nuvem fora, OTTO não cala) — entregue
+
+Sintoma relatado: a resposta era **"Modelos neurais temporariamente indisponíveis"** com a
+ação `none → error`. O OTTO ficava mudo sempre que a Groq não respondia (sem internet, chave
+inválida, limite), mesmo com metade das funções dele sendo locais.
+
+| Correção | Onde |
+| --- | --- |
+| Cérebro local: saudação, hora, identidade, arquivos, memória e comandos de mídia | `server/localBrain.ts` |
+| Comando de mídia vira **ação real de ffmpeg** mesmo sem nuvem ("extrai o áudio de X.mp4") | idem |
+| Quando a pergunta exige o modelo grande, a resposta é honesta: diz o motivo técnico em vez de inventar | idem |
+| A rota devolve **200 degradado** (não 503), com `provider: 'local'` e `degraded: true` | `server.ts` |
+| Chip âmbar **"modo local"** no lugar de `none → error` | `src/components/OttoLiquidBetaView.tsx` |
+
+Heurísticas que evitaram respostas erradas no teste: acento/caixa normalizados (`voce`, `audio`),
+nome de arquivo não engole a palavra anterior ("do amostra.mp4"), arquivo entre aspas mantém os
+espaços, preferência por fonte em `media/in` sobre resultado em `media/out`, e escolha automática
+quando só existe um candidato do tipo certo ("faz um gif desse vídeo").
+
+**Validação:** 9 testes novos (111 no total), `tsc` limpo, build OK e `curl` em `/api/otto/intent`
+com "ola", "que horas são", "quem é você", "extrai o áudio do amostra.mp4", "faz um gif desse
+vídeo", "converte para mp3" e "corta os primeiros 10 segundos" devolvendo respostas/ações corretas.

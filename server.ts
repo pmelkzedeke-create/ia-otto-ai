@@ -29,6 +29,7 @@ import { filesRouter } from './server/routes/files.js';
 import { slidesRouter } from './server/routes/slides.js';
 import { mediaRouter } from './server/routes/media.js';
 import { listMediaFiles } from './server/mediaTools.js';
+import { buildLocalReply } from './server/localBrain.js';
 import {
   loadMemories,
   saveMemories,
@@ -1140,6 +1141,9 @@ app.post('/api/otto/intent', async (req, res) => {
 
   const p = prompt.toLowerCase().trim();
 
+  // Última falha de infraestrutura de IA, usada pelo modo local para explicar o motivo.
+  let lastAiError: string | null = null;
+
   // === REAL MULTIMODAL VISION HANDLER (Gemini 3.8 Flash Vision) ===
   if (image && (image.base64 || image.dataUrl)) {
     const rawData = (image.base64 || image.dataUrl || '');
@@ -1460,6 +1464,7 @@ DIRETRIZES FUNDAMENTAIS DE RACIOCÍNIO E DECISÃO:
         }
       }
     } catch (groqErr: any) {
+      lastAiError = groqErr?.message || String(groqErr);
       console.log('[GroqPrimaryAI] Groq indisponível no momento. Usando fallback Gemini.');
     }
   }
@@ -1515,17 +1520,33 @@ DIRETRIZES FUNDAMENTAIS DE RACIOCÍNIO E DECISÃO:
         }
       }
     } catch (apiErr: any) {
+      lastAiError = lastAiError || apiErr?.message || String(apiErr);
       console.warn('[GeminiAI] Falha na chamada da IA Gemini:', apiErr?.message || apiErr);
     }
   }
 
-  // Se nenhum modelo conseguiu responder, retorna erro real transparente (PROIBIDO mensagem pronta ou simulada)
-  return res.status(503).json({
-    error: 'Modelos neurais temporariamente indisponíveis.',
-    speechResponse: 'Desculpe, ocorreu uma instabilidade na conexão com os modelos de IA e não foi possível processar sua solicitação agora.',
-    actions: [{ action: 'none', target: 'error', parameters: {}, riskLevel: 'LOW', reasoning: 'Falha nos provedores de IA' }],
-    requiresConfirmation: false,
-  });
+  // Nenhum provedor de nuvem respondeu. Em vez de calar o OTTO, ele responde em modo local:
+  // comandos de mídia (ffmpeg roda na máquina), hora, arquivos, memória — e explica o motivo.
+  // Nada aqui é resposta simulada: ou é ação real executada localmente, ou é uma negativa honesta.
+  try {
+    const localReply = await buildLocalReply({
+      prompt,
+      reason: lastAiError ? String(lastAiError).slice(0, 200) : undefined,
+      dataHubContext,
+      memoriesCount: loadMemories().length,
+    });
+    console.log('[OTTO] Modo local respondeu:', localReply.notice);
+    return res.json(localReply);
+  } catch (localErr) {
+    console.error('[OTTO] Falha no modo local:', localErr);
+    return res.status(503).json({
+      error: 'Modelos neurais temporariamente indisponíveis.',
+      speechResponse:
+        'Estou sem acesso aos modelos de IA e o modo local também falhou. Tente de novo em instantes.',
+      actions: [{ action: 'none', target: 'error', parameters: {}, riskLevel: 'LOW', reasoning: 'Falha nos provedores de IA' }],
+      requiresConfirmation: false,
+    });
+  }
 });
 
 // 8. Vision Endpoint: Screen capture analysis

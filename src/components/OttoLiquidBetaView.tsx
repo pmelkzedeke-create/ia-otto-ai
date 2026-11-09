@@ -1750,26 +1750,48 @@ export const OttoLiquidView: React.FC<OttoLiquidViewProps> = ({
                       <div className={`pt-2 mt-2 border-t text-[10px] flex flex-wrap gap-1.5 font-mono ${
                         isLight ? 'border-slate-200 text-slate-900' : 'border-white/[0.1] text-slate-200'
                       }`}>
-                        {msg.actions.map((act, i) => (
-                          <span
-                            key={i}
-                            className={`px-2 py-0.5 rounded-lg border flex items-center gap-1 shadow-sm font-semibold ${
-                              isLight
-                                ? 'bg-slate-100 ot-border text-slate-900'
-                                : 'bg-black/50 border-white/30 text-slate-200'
-                            }`}
-                          >
-                            <Zap
-                              strokeWidth={iconStroke}
-                              fill={isLight ? 'currentColor' : 'none'}
-                              className={`w-3 h-3 ${isLight ? 'text-slate-950' : 'text-white'}`}
-                            />
-                            <span>
-                              {act.action}
-                              {act.target ? ` → ${act.target}` : ''}
+                        {msg.actions.map((act, i) => {
+                          // Resposta do cérebro local (nuvem fora): amber, sem cara de erro.
+                          const isLocal = act.action === 'none' && act.target === 'local';
+
+                          if (isLocal) {
+                            return (
+                              <span
+                                key={i}
+                                title="Sem provedor de nuvem: esta resposta veio das regras locais do OTTO"
+                                className={`px-2 py-0.5 rounded-lg border flex items-center gap-1.5 shadow-sm font-semibold ${
+                                  isLight
+                                    ? 'bg-amber-50 border-amber-300 text-amber-900'
+                                    : 'bg-amber-400/10 border-amber-400/30 text-amber-200'
+                                }`}
+                              >
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                                <span>modo local</span>
+                              </span>
+                            );
+                          }
+
+                          return (
+                            <span
+                              key={i}
+                              className={`px-2 py-0.5 rounded-lg border flex items-center gap-1 shadow-sm font-semibold ${
+                                isLight
+                                  ? 'bg-slate-100 ot-border text-slate-900'
+                                  : 'bg-black/50 border-white/30 text-slate-200'
+                              }`}
+                            >
+                              <Zap
+                                strokeWidth={iconStroke}
+                                fill={isLight ? 'currentColor' : 'none'}
+                                className={`w-3 h-3 ${isLight ? 'text-slate-950' : 'text-white'}`}
+                              />
+                              <span>
+                                {act.action}
+                                {act.target ? ` → ${act.target}` : ''}
+                              </span>
                             </span>
-                          </span>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
 
