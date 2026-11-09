@@ -2,6 +2,13 @@ import { Router } from 'express';
 import os from 'os';
 import { GroqService } from '../groqService.js';
 import { TextCodeProvider } from '../textCodeProvider.js';
+import {
+  clearProviderConfig,
+  fetchProviderModels,
+  ProviderError,
+  publicProviderStatus,
+  saveProviderConfig,
+} from '../providerConfig.js';
 import { TaskRouter } from '../taskRouter.js';
 import { WORKSPACE_DIR } from '../memoryStore.js';
 
@@ -98,4 +105,76 @@ configRouter.get('/api/system/info', (req, res) => {
   } catch (err) {
     res.status(500).json({ error: 'Falha ao obter status do sistema', details: String(err) });
   }
+});
+
+// ---------------------------------------------------------------------------
+// Provedor de IA configurável pela interface
+// ---------------------------------------------------------------------------
+
+// 12. Estado atual do provedor (sem expor a chave)
+configRouter.get('/api/provider', (req, res) => {
+  res.json(publicProviderStatus());
+});
+
+// 13. Testa URL + chave e devolve os modelos disponíveis
+configRouter.post('/api/provider/test', async (req, res) => {
+  const { baseUrl, apiKey, timeoutMs } = req.body || {};
+
+  try {
+    const result = await fetchProviderModels({
+      baseUrl: String(baseUrl || ''),
+      apiKey: String(apiKey || ''),
+      timeoutMs: timeoutMs ? Number(timeoutMs) : undefined,
+    });
+
+    return res.json({
+      ok: true,
+      baseUrl: result.baseUrl,
+      total: result.models.length,
+      models: result.models,
+    });
+  } catch (error) {
+    if (error instanceof ProviderError) {
+      const status = error.code === 'TIMEOUT' ? 504 : error.code === 'NETWORK' ? 502 : 400;
+      return res.status(status).json({ ok: false, code: error.code, error: error.message });
+    }
+    console.error('[ProviderTest] erro inesperado:', error);
+    return res.status(500).json({ ok: false, error: 'Falha inesperada ao testar o provedor.' });
+  }
+});
+
+// 14. Salva e passa a usar o provedor/modelo escolhido
+configRouter.post('/api/provider/apply', (req, res) => {
+  const { baseUrl, apiKey, model } = req.body || {};
+
+  try {
+    const config = saveProviderConfig({
+      baseUrl: String(baseUrl || ''),
+      apiKey: String(apiKey || ''),
+      model: String(model || ''),
+    });
+
+    // Modelo novo, vida nova: limpa o cooldown de uma falha anterior.
+    GroqService.resetCooldown();
+
+    console.log(`[Provider] Configurado pela interface: ${config.model} @ ${config.baseUrl}`);
+    return res.json({
+      ok: true,
+      status: publicProviderStatus(),
+      message: `Agora usando ${config.model}.`,
+    });
+  } catch (error) {
+    if (error instanceof ProviderError) {
+      return res.status(400).json({ ok: false, code: error.code, error: error.message });
+    }
+    console.error('[ProviderApply] erro inesperado:', error);
+    return res.status(500).json({ ok: false, error: 'Não consegui salvar a configuração.' });
+  }
+});
+
+// 15. Volta para o .env (descarta a configuração feita pela interface)
+configRouter.delete('/api/provider', (req, res) => {
+  clearProviderConfig();
+  GroqService.resetCooldown();
+  res.json({ ok: true, status: publicProviderStatus() });
 });

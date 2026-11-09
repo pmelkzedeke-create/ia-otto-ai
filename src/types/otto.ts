@@ -319,6 +319,8 @@ export interface OttoPermissions {
 
 export interface OttoSettings {
   voiceEnabled: boolean;
+  /** Responde como o Claude: só texto no chat, sem sintetizar voz automaticamente. */
+  textOnlyMode?: boolean;
   voiceVolume: number; // 0 to 1
   voiceRate: number; // 0.5 to 2
   voicePitch: number; // 0.5 to 2

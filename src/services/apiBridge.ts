@@ -783,6 +783,70 @@ export class ApiBridge {
     };
   }
 
+  // ---------------------------------------------------------------------
+  // Provedor de IA configurável pela interface
+  // ---------------------------------------------------------------------
+
+  public static async getProviderStatus(): Promise<{
+    baseUrl: string;
+    model: string;
+    hasKey: boolean;
+    keyPreview: string | null;
+    source: 'interface' | 'env';
+    updatedAt: string | null;
+  } | null> {
+    try {
+      const res = await apiFetch('/api/provider');
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  }
+
+  /** Testa URL + chave e devolve os modelos que o provedor expõe. */
+  public static async testProvider(
+    baseUrl: string,
+    apiKey: string
+  ): Promise<{
+    ok: boolean;
+    models?: { id: string; ownedBy?: string; contextLength?: number; kind: string }[];
+    baseUrl?: string;
+    error?: string;
+    code?: string;
+  }> {
+    try {
+      const res = await apiFetch('/api/provider/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ baseUrl, apiKey }),
+      });
+      const data = await res.json().catch(() => ({}));
+      return { ...data, ok: res.ok && Boolean(data?.ok) };
+    } catch (error) {
+      return { ok: false, error: (error as Error)?.message || 'Falha de rede ao testar o provedor.' };
+    }
+  }
+
+  /** Salva e passa a usar o provedor/modelo escolhido. */
+  public static async applyProvider(
+    baseUrl: string,
+    apiKey: string,
+    model: string
+  ): Promise<{ ok: boolean; message?: string; error?: string; status?: any }> {
+    try {
+      const res = await apiFetch('/api/provider/apply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ baseUrl, apiKey, model }),
+      });
+      const data = await res.json().catch(() => ({}));
+      return { ...data, ok: res.ok && Boolean(data?.ok) };
+    } catch (error) {
+      return { ok: false, error: (error as Error)?.message || 'Falha ao salvar o provedor.' };
+    }
+  }
+
   public static async getGroqStatus(): Promise<{ configured: boolean; provider: string; model: string; status: string }> {
     try {
       const res = await apiFetch('/api/groq/status');

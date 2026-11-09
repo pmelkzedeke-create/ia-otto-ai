@@ -130,6 +130,7 @@ export default function App() {
   const [settings, setSettings] = useState<OttoSettings>(() => {
     const baseSettings: OttoSettings = {
       voiceEnabled: true,
+      textOnlyMode: false,
       voiceVolume: 0.95,
       voiceRate: 1.0,
       voicePitch: 1.0,
@@ -432,7 +433,7 @@ export default function App() {
             speechResponse: intentResult.speechResponse,
           });
 
-          if (settings.voiceEnabled) {
+          if (!settings.textOnlyMode && settings.voiceEnabled) {
             voiceEngine.setMuted(true);
             await ttsEngine.speak(
               intentResult.confirmationPrompt || 'Atenção. Esta ação requer sua confirmação antes de prosseguir.',
@@ -642,7 +643,7 @@ export default function App() {
         ]);
 
         // Speak via ElevenLabs or browser synthesis
-        if (settings.voiceEnabled) {
+        if (!settings.textOnlyMode && settings.voiceEnabled) {
           setState('SPEAKING');
           // MUTE mic before speaking so OTTO never hears its own voice!
           voiceEngine.setMuted(true);
@@ -682,7 +683,7 @@ export default function App() {
           },
         ]);
 
-        if (settings.voiceEnabled) {
+        if (!settings.textOnlyMode && settings.voiceEnabled) {
           voiceEngine.setMuted(true);
           await ttsEngine.speak(fallbackMsg, {
             volume: settings.voiceVolume,
@@ -850,7 +851,7 @@ export default function App() {
     const result = await ToolRouter.executeAction(action);
     addActivity(result.message, result.success ? 'success' : 'error');
 
-    if (settings.voiceEnabled) {
+    if (!settings.textOnlyMode && settings.voiceEnabled) {
       voiceEngine.setMuted(true);
       setState('SPEAKING');
       await ttsEngine.speak(result.message, {

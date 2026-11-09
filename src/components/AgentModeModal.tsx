@@ -219,7 +219,7 @@ export const AgentModeModal: React.FC<AgentModeModalProps> = ({
     addLog(`TaskRouter → ${decision.route} (${decision.routeName})`);
     addLog(`Motivo: ${decision.reason} [Confiança: ${Math.round(decision.confidence * 100)}%]`);
 
-    if (settings?.voiceEnabled) {
+    if (settings?.voiceEnabled && !settings?.textOnlyMode) {
       ttsEngine.speak(`Iniciando tarefa técnica na rota especializada: ${text}`).catch(() => {});
     }
 
@@ -239,7 +239,7 @@ export const AgentModeModal: React.FC<AgentModeModalProps> = ({
         }
         soundEffects.playSuccess();
         addLog(`🎉 Orquestração concluída com sucesso! ${res.files?.length || 0} arquivos criados.`);
-        if (settings?.voiceEnabled) {
+        if (settings?.voiceEnabled && !settings?.textOnlyMode) {
           ttsEngine.speak(`Tarefa concluída com sucesso! Todos os arquivos foram criados e testados no sandbox.`).catch(() => {});
         }
       }

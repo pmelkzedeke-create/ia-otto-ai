@@ -30,6 +30,7 @@ import { slidesRouter } from './server/routes/slides.js';
 import { mediaRouter } from './server/routes/media.js';
 import { listMediaFiles } from './server/mediaTools.js';
 import { buildLocalReply } from './server/localBrain.js';
+import { loadProviderConfigOnBoot } from './server/providerConfig.js';
 import {
   loadMemories,
   saveMemories,
@@ -42,6 +43,9 @@ import { initSessionToken, isUsingExplicitToken } from './server/session.js';
 import { securityHeaders, apiRateLimit, errorHandler, notFoundApiHandler } from './server/middleware/httpHardening.js';
 
 dotenv.config();
+
+// Configuração de provedor salva pela interface vence o .env (e sobrevive ao restart).
+loadProviderConfigOnBoot();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

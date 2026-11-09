@@ -333,6 +333,11 @@ export class GroqService {
     return payload;
   }
 
+  /** Depois de trocar provedor/modelo, uma falha antiga não deve mais bloquear. */
+  public static resetCooldown(): void {
+    this.groqCooldownUntil = 0;
+  }
+
   public static get API_KEY(): string {
     return process.env.GROQ_API_KEY || '';
   }

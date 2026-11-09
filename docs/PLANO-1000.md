@@ -1467,3 +1467,42 @@ quando só existe um candidato do tipo certo ("faz um gif desse vídeo").
 **Validação:** 9 testes novos (111 no total), `tsc` limpo, build OK e `curl` em `/api/otto/intent`
 com "ola", "que horas são", "quem é você", "extrai o áudio do amostra.mp4", "faz um gif desse
 vídeo", "converte para mp3" e "corta os primeiros 10 segundos" devolvendo respostas/ações corretas.
+
+---
+
+## Anexo I · Só texto + provedor configurável na interface — entregue
+
+Duas coisas pedidas nas configurações: parar o OTTO de falar no chat (estilo Claude) e
+configurar a API de IA por URL + chave, com teste e escolha de modelo.
+
+### Só texto
+
+| | |
+| --- | --- |
+| Novo campo `textOnlyMode` em `OttoSettings` | `src/types/otto.ts` |
+| Controle segmentado **Voz + texto / Só texto** no topo da aba VOZ | `SettingsModal.tsx` |
+| Todo `ttsEngine.speak` automático passa a exigir `!textOnlyMode` (4 pontos no chat, 2 no agente) | `App.tsx`, `AgentModeModal.tsx` |
+| O botão **Ouvir** de cada mensagem continua funcionando (é manual) | — |
+
+### Provedor configurável
+
+Fluxo: **URL + chave → Testar → lista de modelos → escolher → OK**.
+
+| | |
+| --- | --- |
+| `POST /api/provider/test` consulta `${baseUrl}/models` (contrato OpenAI), com timeout de 12 s | `server/routes/config.ts` |
+| `POST /api/provider/apply` salva e aplica (modelo, base e chave) sem reiniciar | idem |
+| `GET /api/provider` devolve endereço, modelo e só um recorte da chave | idem |
+| `DELETE /api/provider` volta ao `.env` | idem |
+| Persistência em `otto_workspace/.otto_provider.json` com `0600`, aplicada no boot | `server/providerConfig.ts` |
+| Card na aba IA com teste, filtro de modelos, marcação por tipo (conversa/áudio/embedding) e tamanho de contexto | `SettingsModal.tsx` |
+| Troca de provedor limpa o cooldown de falhas antigas | `GroqService.resetCooldown()` |
+
+Aceita também formatos fora do padrão OpenAI (`{ models: [...] }` do Ollama), remove
+`/chat/completions` colado por engano na URL e classifica embeddings/whisper fora da lista
+principal. Erros são específicos: `BAD_URL`, `BAD_KEY`, `TIMEOUT`, `NETWORK`, `EMPTY`, `BAD_RESPONSE`.
+
+**Validação:** 11 testes novos (122 no total) contra um servidor falso compatível com OpenAI —
+sucesso, 401, endpoint inexistente, provedor fora do ar, formato Ollama, persistência 0600 e
+mascaramento da chave. Fluxo completo exercitado por `curl` (testar → 5 modelos → aplicar →
+`/api/groq/status` refletindo o novo modelo) e smoke SSR das duas abas (`initialTab` agora é prop).
