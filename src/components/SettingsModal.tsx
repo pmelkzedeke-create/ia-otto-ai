@@ -29,6 +29,7 @@ import {
   RespeecherVoice,
 } from '../services/ttsEngine';
 import { desktopOverlayBridge } from '../services/desktopOverlayBridge';
+import { describeMicEnvironment, describeMicError } from '../services/voiceEngine';
 import { ApiBridge } from '../services/apiBridge';
 import { apiFetch } from '../services/http';
 
@@ -80,6 +81,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     triedUrl?: string;
   } | null>(null);
   const [providerManualModel, setProviderManualModel] = useState('');
+
+  // Diagnóstico de microfone
+  const [micTesting, setMicTesting] = useState(false);
+  const [micResult, setMicResult] = useState<{ kind: 'ok' | 'error' | 'warn'; text: string } | null>(null);
+  const [micLevel, setMicLevel] = useState(0);
   const [providerSource, setProviderSource] = useState<'interface' | 'env'>('env');
   const [modelQuery, setModelQuery] = useState('');
 
@@ -542,6 +548,124 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       </button>
                     );
                   })}
+                </div>
+
+                {/* Dentro de outra página o navegador costuma negar microfone e voz */}
+                {describeMicEnvironment().inIframe && (
+                  <button
+                    type="button"
+                    onClick={() => window.open(window.location.href, '_blank', 'noopener,noreferrer')}
+                    className="text-[11px] px-3 py-2 rounded-xl border border-amber-400/40 bg-amber-500/10 text-amber-200 hover:bg-amber-500/20 transition-all cursor-pointer text-left leading-relaxed"
+                  >
+                    Você está vendo o OTTO dentro de outra página. Microfone e voz só funcionam em aba própria —
+                    <span className="underline font-semibold"> abrir agora</span>.
+                  </button>
+                )}
+
+                {/* Diagnóstico do microfone: responde "por que ele não me ouve?" */}
+                <div className="flex flex-col gap-2 pt-1">
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      disabled={micTesting}
+                      onClick={async () => {
+                        setMicTesting(true);
+                        setMicResult(null);
+                        setMicLevel(0);
+
+                        const env = describeMicEnvironment();
+                        const ambiente = [
+                          env.secureContext ? 'conexão segura ✓' : 'sem HTTPS ✗',
+                          env.inIframe ? 'dentro de outra página (iframe) ✗' : 'aba própria ✓',
+                          env.speechApi ? 'reconhecimento nativo ✓' : 'sem reconhecimento nativo (usa servidor)',
+                        ].join(' · ');
+
+                        if (!env.hasMediaDevices) {
+                          setMicResult({ kind: 'error', text: `${describeMicError(new Error('sem mediaDevices'))}\n${ambiente}` });
+                          setMicTesting(false);
+                          return;
+                        }
+
+                        try {
+                          const stream = await navigator.mediaDevices.getUserMedia({
+                            audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+                          });
+
+                          const label = stream.getAudioTracks()[0]?.label || 'microfone padrão';
+                          const context = new AudioContext();
+                          const source = context.createMediaStreamSource(stream);
+                          const analyser = context.createAnalyser();
+                          analyser.fftSize = 512;
+                          source.connect(analyser);
+
+                          const buffer = new Uint8Array(analyser.frequencyBinCount);
+                          let peak = 0;
+                          const started = Date.now();
+
+                          await new Promise<void>((resolve) => {
+                            const tick = () => {
+                              analyser.getByteTimeDomainData(buffer);
+                              let sum = 0;
+                              for (let i = 0; i < buffer.length; i += 1) {
+                                const value = (buffer[i] - 128) / 128;
+                                sum += value * value;
+                              }
+                              const level = Math.min(1, Math.sqrt(sum / buffer.length) * 4);
+                              peak = Math.max(peak, level);
+                              setMicLevel(level);
+
+                              if (Date.now() - started < 3000) requestAnimationFrame(tick);
+                              else resolve();
+                            };
+                            tick();
+                          });
+
+                          stream.getTracks().forEach((track) => track.stop());
+                          await context.close().catch(() => {});
+
+                          setMicResult({
+                            kind: peak > 0.04 ? 'ok' : 'warn',
+                            text:
+                              (peak > 0.04
+                                ? `Microfone funcionando: "${label}" captou sua voz.`
+                                : `Microfone abriu ("${label}"), mas não captei som. Fale mais perto ou confira o dispositivo de entrada do sistema.`) +
+                              `\n${ambiente}`,
+                          });
+                        } catch (error) {
+                          setMicResult({ kind: 'error', text: `${describeMicError(error)}\n${ambiente}` });
+                        } finally {
+                          setMicTesting(false);
+                          setMicLevel(0);
+                        }
+                      }}
+                      className="flex-1 px-3 py-2 rounded-xl text-xs font-semibold bg-cyan-500/15 border border-cyan-400/40 text-cyan-200 hover:bg-cyan-500/25 transition-all cursor-pointer active:scale-[0.99] disabled:opacity-50"
+                    >
+                      {micTesting ? 'Testando… fale algo' : 'Testar microfone'}
+                    </button>
+                  </div>
+
+                  {micTesting && (
+                    <div className="h-1.5 rounded-full bg-black/50 overflow-hidden">
+                      <div
+                        className="h-full bg-cyan-400 transition-[width] duration-75"
+                        style={{ width: `${Math.round(micLevel * 100)}%` }}
+                      />
+                    </div>
+                  )}
+
+                  {micResult && (
+                    <div
+                      className={`text-[11px] px-3 py-2 rounded-xl border leading-relaxed whitespace-pre-line ${
+                        micResult.kind === 'ok'
+                          ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-200'
+                          : micResult.kind === 'warn'
+                          ? 'bg-amber-500/10 border-amber-500/30 text-amber-200'
+                          : 'bg-rose-500/10 border-rose-500/30 text-rose-200'
+                      }`}
+                    >
+                      {micResult.text}
+                    </div>
+                  )}
                 </div>
               </div>
 

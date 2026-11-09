@@ -11,7 +11,13 @@ export function securityHeaders(req: Request, res: Response, next: NextFunction)
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'SAMEORIGIN');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  res.setHeader('Permissions-Policy', 'camera=(self), microphone=(self), display-capture=(self)');
+  // Microfone e áudio precisam funcionar também quando o OTTO aparece dentro de
+  // outra página (preview/iframe): `(self)` bloqueia a delegação e o navegador
+  // recusa getUserMedia sem aviso útil.
+  res.setHeader(
+    'Permissions-Policy',
+    'camera=(self *), microphone=*, display-capture=(self *), autoplay=*, fullscreen=(self *)'
+  );
   res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
   res.setHeader('X-DNS-Prefetch-Control', 'off');
 

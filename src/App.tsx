@@ -46,7 +46,7 @@ import { OttoFile } from './types/dataHub';
 import { DataHubStorage } from './services/dataHubStorage';
 import { audioAnalyzer } from './services/audioAnalyzer';
 import { soundEffects } from './services/audioSynthesizer';
-import { voiceEngine } from './services/voiceEngine';
+import { voiceEngine, describeMicEnvironment, describeMicError } from './services/voiceEngine';
 import { ttsEngine } from './services/ttsEngine';
 import { describeApiError } from './services/http';
 import { loadHistory, saveHistory } from './services/chatHistoryStore';
@@ -821,10 +821,33 @@ export default function App() {
       return;
     }
 
+    // Antes de anunciar "microfone ativado", confirma que ele realmente abre:
+    // dentro de iframe, sem HTTPS ou com permissão negada o navegador recusa calado.
+    const env = describeMicEnvironment();
+    if (!env.hasMediaDevices) {
+      addActivity(describeMicError(new Error('sem mediaDevices')), 'error');
+      setState('IDLE');
+      setIsListening(false);
+      return;
+    }
+
+    const stream = await voiceEngine.ensureMicrophonePermission();
+    if (!stream) {
+      addActivity(voiceEngine.getLastMicError() || 'Não consegui abrir o microfone.', 'error');
+      setState('IDLE');
+      setIsListening(false);
+      return;
+    }
+
     soundEffects.playListening();
     setState('LISTENING');
     setIsListening(true);
-    addActivity('Microfone ativado. Pode falar seu comando...', 'info');
+    addActivity(
+      env.speechApi
+        ? 'Microfone ativado. Pode falar seu comando...'
+        : 'Microfone ativado. Este navegador não tem reconhecimento nativo — o áudio será transcrito no servidor.',
+      'info'
+    );
     await voiceEngine.activateManualCommand();
   }, [state, addActivity]);
 

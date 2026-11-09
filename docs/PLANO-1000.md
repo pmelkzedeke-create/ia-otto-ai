@@ -1536,3 +1536,26 @@ compatível com OpenAI — URL sem protocolo, URL sem `/v1`, chave vazia usando 
 modelos), 401 com dica, rede fora com URL tentada — e depois restaurando a configuração real
 da Groq. O `curl` contra a Groq real devolve `NETWORK` com o aviso de que o bloqueio é do
 sandbox, não da chave.
+
+---
+
+## Anexo K · "O OTTO não me ouve" — microfone diagnosticável — entregue
+
+Não havia um bug único: havia **silêncio sobre a causa**. O app pedia o microfone, falhava e
+ainda escrevia "Microfone ativado. Pode falar…".
+
+| Correção | Onde |
+| --- | --- |
+| `Permissions-Policy` deixou de bloquear delegação: `microphone=*`, `autoplay=*` | `server/middleware/httpHardening.ts` |
+| Não anuncia mais "microfone ativado" antes de conseguir o stream | `src/App.tsx` |
+| `ensureMicrophonePermission` guarda o motivo real; `activateManualCommand` encerra o modo e devolve o erro | `src/services/voiceEngine.ts` |
+| Tradutor de DOMException: permissão negada, sem dispositivo, ocupado, inseguro, iframe, navegador sem `mediaDevices` | idem (`describeMicError`) |
+| Radiografia do ambiente (HTTPS, iframe, reconhecimento nativo) mostrada ao usuário | idem (`describeMicEnvironment`) |
+| Botão **Testar microfone** com medidor de nível e veredito ("captou sua voz" / "abriu, mas sem som") | `SettingsModal.tsx` |
+| Aviso "você está dentro de outra página" com **abrir em aba própria** | idem |
+| Web Speech bloqueado (`network`, `service-not-allowed`) passa a cair na transcrição do servidor, com janela de 5 s em vez de 10 s | `voiceEngine.ts` |
+
+**Validação:** 7 testes novos (134 no total) para o ambiente sem `window` (caminho SSR/servidor)
+e para cada classe de erro; header conferido por `curl` (`microphone=*`); UI conferida no bundle
+de desenvolvimento. A captura em si depende de um navegador real com dispositivo de áudio — o
+que o **Testar microfone** agora reporta em uma frase.
