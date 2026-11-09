@@ -9,6 +9,7 @@ import {
   fetchProviderModels,
   getProviderConfig,
   normalizeBaseUrl,
+  previewKey,
   publicProviderStatus,
   saveProviderConfig,
 } from '../server/providerConfig.js';
@@ -70,9 +71,8 @@ describe('Provedor de IA: URL', () => {
     );
   });
 
-  test('recusa URL vazia, sem protocolo ou de outro esquema', () => {
+  test('recusa URL vazia ou de outro esquema', () => {
     assert.throws(() => normalizeBaseUrl(''), ProviderError);
-    assert.throws(() => normalizeBaseUrl('api.groq.com/v1'), ProviderError);
     assert.throws(() => normalizeBaseUrl('ftp://servidor/v1'), ProviderError);
   });
 });
@@ -116,6 +116,49 @@ describe('Provedor de IA: teste de conexão', () => {
   test('aceita formato do Ollama ({ models: [...] })', async () => {
     const result = await fetchProviderModels({ baseUrl: `${baseUrl}/ollama`, apiKey: '' });
     assert.equal(result.models[0].id, 'qwen3:8b');
+  });
+});
+
+describe('Provedor de IA: atalhos que evitam falso erro', () => {
+  test('aceita URL sem protocolo (https por padrão, http em localhost)', () => {
+    assert.equal(normalizeBaseUrl('api.groq.com/openai/v1'), 'https://api.groq.com/openai/v1');
+    assert.equal(normalizeBaseUrl('localhost:11434/v1'), 'http://localhost:11434/v1');
+    assert.equal(normalizeBaseUrl('127.0.0.1:4599/v1'), 'http://127.0.0.1:4599/v1');
+  });
+
+  test('campo de chave vazio usa a chave salva', async () => {
+    const result = await fetchProviderModels({
+      baseUrl: `${baseUrl}/v1`,
+      apiKey: '',
+      fallbackKey: VALID_KEY,
+    });
+    assert.equal(result.models.length, 4);
+    assert.equal(result.usedKeyPreview, previewKey(VALID_KEY));
+  });
+
+  test('404 sem versão na URL tenta /v1 sozinho', async () => {
+    const result = await fetchProviderModels({ baseUrl, apiKey: VALID_KEY });
+    assert.equal(result.baseUrl, `${baseUrl}/v1`);
+    assert.equal(result.models.length, 4);
+  });
+
+  test('erro de rede diz onde olhar, com URL tentada', async () => {
+    await assert.rejects(
+      () => fetchProviderModels({ baseUrl: 'http://127.0.0.1:1/v1', apiKey: VALID_KEY, timeoutMs: 2000 }),
+      (error: unknown) => {
+        assert.ok(error instanceof ProviderError);
+        assert.equal(error.code, 'NETWORK');
+        assert.match(String(error.hint), /máquina onde o OTTO roda/);
+        assert.equal(error.triedUrl, 'http://127.0.0.1:1/v1/models');
+        return true;
+      }
+    );
+  });
+
+  test('preview da chave nunca é a chave inteira', () => {
+    assert.equal(previewKey('gsk_UPGz3jKH1vuMbpSEJTvDWGdy'), 'gsk_UP…WGdy');
+    assert.equal(previewKey('curta'), '••••');
+    assert.equal(previewKey(''), null);
   });
 });
 

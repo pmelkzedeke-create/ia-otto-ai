@@ -39,15 +39,29 @@ function classifyModel(id: string): ProviderModel['kind'] {
 }
 
 export class ProviderError extends Error {
-  constructor(message: string, public code: string) {
+  constructor(
+    message: string,
+    public code: string,
+    public hint?: string,
+    public triedUrl?: string
+  ) {
     super(message);
     this.name = 'ProviderError';
   }
 }
 
 export function normalizeBaseUrl(raw: string): string {
-  const value = String(raw || '').trim().replace(/\/+$/, '');
-  if (!value) throw new ProviderError('Informe a URL da API (ex: https://api.groq.com/openai/v1).', 'BAD_URL');
+  let value = String(raw || '').trim().replace(/\/+$/, '');
+  if (!value) {
+    throw new ProviderError('Informe a URL da API (ex: https://api.groq.com/openai/v1).', 'BAD_URL');
+  }
+
+  // "api.groq.com/v1" é o que a maioria cola; completa o protocolo em vez de recusar.
+  // Servidor local (Ollama, LM Studio) quase sempre é http, não https.
+  if (!/^[a-z][a-z0-9+.-]*:\/\//i.test(value)) {
+    const isLocal = /^(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])(:|\/|$)/i.test(value);
+    value = `${isLocal ? 'http' : 'https'}://${value}`;
+  }
 
   let url: URL;
   try {
@@ -60,55 +74,131 @@ export function normalizeBaseUrl(raw: string): string {
     throw new ProviderError('Só aceito http:// ou https://.', 'BAD_URL');
   }
 
+  if (url.protocol === 'http:' && !/^(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])/.test(url.hostname)) {
+    // Chave indo em texto claro pela rede: avisa, mas não bloqueia (rede interna existe).
+    console.warn(`[Provider] URL http:// sem TLS para ${url.hostname} — a chave viaja sem criptografia.`);
+  }
+
   // quem cola ".../v1/chat/completions" quer ".../v1"
   return value.replace(/\/chat\/completions$/, '');
 }
 
 /**
  * Consulta a lista de modelos do provedor. Sem rede, devolve erro claro em vez de travar.
+ *
+ * `apiKey` vazio cai na chave já salva (ou do .env): quem deixou o campo em branco
+ * quer testar o que já está configurado, não testar "sem chave".
  */
 export async function fetchProviderModels(options: {
   baseUrl: string;
-  apiKey: string;
+  apiKey?: string;
   timeoutMs?: number;
-}): Promise<{ models: ProviderModel[]; baseUrl: string; raw: number }> {
+  /** Chave usada quando o campo vem vazio. */
+  fallbackKey?: string;
+}): Promise<{ models: ProviderModel[]; baseUrl: string; raw: number; usedKeyPreview: string | null }> {
   const baseUrl = normalizeBaseUrl(options.baseUrl);
-  const apiKey = String(options.apiKey || '').trim();
+  const apiKey = String(options.apiKey || '').trim() || String(options.fallbackKey || '').trim();
   const timeoutMs = Math.min(Math.max(options.timeoutMs ?? 12_000, 2_000), 30_000);
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
 
-  try {
-    const response = await fetch(`${baseUrl}/models`, {
+  const requestModels = async (url: string) => {
+    const response = await fetch(`${url}/models`, {
       method: 'GET',
       headers: apiKey ? { Authorization: `Bearer ${apiKey}` } : {},
       signal: controller.signal,
     });
+    return response;
+  };
 
+  let triedUrl = `${baseUrl}/models`;
+
+  try {
+    let response = await requestModels(baseUrl);
+
+    // Muita gente cola ".../openai" sem o /v1. Se deu 404 e a URL não tem versão, tenta /v1.
+    if (response.status === 404 && !/\/v\d+$/.test(baseUrl)) {
+      const retryUrl = `${baseUrl}/v1`;
+      triedUrl = `${retryUrl}/models`;
+      response = await requestModels(retryUrl);
+      if (response.ok) {
+        const retried = await parseModelsResponse(response, triedUrl);
+        return { ...retried, baseUrl: retryUrl, usedKeyPreview: previewKey(apiKey) };
+      }
+    }
+
+    const parsed = await parseModelsResponse(response, triedUrl);
+    return { ...parsed, baseUrl, usedKeyPreview: previewKey(apiKey) };
+  } catch (error) {
+    throw describeProviderFailure(error, triedUrl, timeoutMs);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** Converte a resposta em modelos, com erros específicos por status. */
+async function parseModelsResponse(
+  response: Response,
+  triedUrl: string
+): Promise<{ models: ProviderModel[]; raw: number; usedKeyPreview: string | null }> {
+  {
     const text = await response.text();
     if (text.length > MAX_MODELS_RESPONSE_BYTES) {
-      throw new ProviderError('A resposta do provedor é grande demais para ser uma lista de modelos.', 'BAD_RESPONSE');
+      throw new ProviderError(
+        'A resposta do provedor é grande demais para ser uma lista de modelos.',
+        'BAD_RESPONSE',
+        'Confira se a URL aponta para a API (ex: .../openai/v1), não para um site.',
+        triedUrl
+      );
     }
 
     if (response.status === 401 || response.status === 403) {
-      throw new ProviderError('A chave foi recusada pelo provedor (401/403). Confira a API key.', 'BAD_KEY');
+      throw new ProviderError(
+        'O provedor recusou a chave (401/403).',
+        'BAD_KEY',
+        'Cole a chave de novo — se o campo estiver vazio, a chave salva é usada. Confira também se ela é do mesmo provedor da URL.',
+        triedUrl
+      );
+    }
+    if (response.status === 404) {
+      throw new ProviderError(
+        'O provedor respondeu 404 nessa URL.',
+        'HTTP_ERROR',
+        'Falta o caminho da API. Groq e OpenAI usam /openai/v1 e /v1 no fim da URL.',
+        triedUrl
+      );
     }
     if (!response.ok) {
-      throw new ProviderError(`O provedor respondeu ${response.status}. ${text.slice(0, 120)}`, 'HTTP_ERROR');
+      throw new ProviderError(
+        `O provedor respondeu ${response.status}. ${text.slice(0, 120)}`,
+        'HTTP_ERROR',
+        'Se o status for 429, é limite de requisições da sua conta.',
+        triedUrl
+      );
     }
 
     let data: any;
     try {
       data = JSON.parse(text);
     } catch {
-      throw new ProviderError('A resposta não é JSON. Confira se a URL aponta para a API certa.', 'BAD_RESPONSE');
+      throw new ProviderError(
+        'A resposta não é JSON.',
+        'BAD_RESPONSE',
+        'A URL provavelmente aponta para um site ou painel, não para a API.',
+        triedUrl
+      );
     }
 
     // OpenAI/Groq usam { data: [...] }; Ollama usa { models: [...] }
     const list = Array.isArray(data?.data) ? data.data : Array.isArray(data?.models) ? data.models : null;
     if (!list) {
-      throw new ProviderError('A resposta não tem lista de modelos. Confira a URL base (ex: .../openai/v1).', 'BAD_RESPONSE');
+      throw new ProviderError(
+        'A resposta não tem lista de modelos.',
+        'BAD_RESPONSE',
+        'Confira a URL base (ex: https://api.groq.com/openai/v1).',
+        triedUrl
+      );
     }
 
     const models: ProviderModel[] = list
@@ -126,7 +216,12 @@ export async function fetchProviderModels(options: {
       .filter(Boolean) as ProviderModel[];
 
     if (models.length === 0) {
-      throw new ProviderError('O provedor respondeu, mas sem modelos. A chave tem permissão?', 'EMPTY');
+      throw new ProviderError(
+        'O provedor respondeu, mas sem modelos.',
+        'EMPTY',
+        'A chave pode não ter permissão para listar modelos, ou a conta está sem acesso.',
+        triedUrl
+      );
     }
 
     // conversa primeiro, depois alfabético
@@ -135,21 +230,45 @@ export async function fetchProviderModels(options: {
       return weight(a.kind) - weight(b.kind) || a.id.localeCompare(b.id);
     });
 
-    return { models, baseUrl, raw: list.length };
-  } catch (error) {
-    if (error instanceof ProviderError) throw error;
-    if ((error as Error)?.name === 'AbortError') {
-      throw new ProviderError(`O provedor não respondeu em ${Math.round(timeoutMs / 1000)}s.`, 'TIMEOUT');
-    }
-
-    const cause = (error as any)?.cause?.code || (error as any)?.code;
-    throw new ProviderError(
-      `Não consegui falar com o provedor${cause ? ` (${cause})` : ''}. Confira a URL, a internet ou o proxy.`,
-      'NETWORK'
-    );
-  } finally {
-    clearTimeout(timer);
+    return { models, raw: list.length, usedKeyPreview: null };
   }
+}
+
+export function previewKey(key: string): string | null {
+  const value = String(key || '').trim();
+  if (!value) return null;
+  return value.length > 12 ? `${value.slice(0, 6)}…${value.slice(-4)}` : '••••';
+}
+
+/** Traduz falha de rede/timeout em algo que diz onde procurar o problema. */
+function describeProviderFailure(error: unknown, triedUrl: string, timeoutMs: number): ProviderError {
+  if (error instanceof ProviderError) return error;
+
+  if ((error as Error)?.name === 'AbortError') {
+    return new ProviderError(
+      `O provedor não respondeu em ${Math.round(timeoutMs / 1000)}s.`,
+      'TIMEOUT',
+      'A máquina pode estar lenta ou bloqueando a saída. Tente de novo.',
+      triedUrl
+    );
+  }
+
+  const cause = (error as any)?.cause?.code || (error as any)?.code || '';
+  const host = (() => {
+    try {
+      return new URL(triedUrl).host;
+    } catch {
+      return triedUrl;
+    }
+  })();
+
+  return new ProviderError(
+    `Não consegui falar com ${host}${cause ? ` (${cause})` : ''}.`,
+    'NETWORK',
+    `Isso é a máquina onde o OTTO roda, não a chave: ela não abriu conexão com ${host}. ` +
+      'Se o OTTO está rodando numa nuvem/preview, o provedor pode estar bloqueado lá — na sua máquina funciona.',
+    triedUrl
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -226,6 +345,11 @@ export function loadProviderConfigOnBoot(): ProviderConfig | null {
     console.log(`[Provider] Usando ${config.model} em ${config.baseUrl} (configurado pela interface).`);
   }
   return config;
+}
+
+/** Chave em vigor: a salva pela interface ou a do .env. */
+export function currentProviderKey(): string {
+  return getProviderConfig()?.apiKey || process.env.GROQ_API_KEY || '';
 }
 
 export function publicProviderStatus() {

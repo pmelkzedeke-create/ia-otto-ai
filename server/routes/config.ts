@@ -4,7 +4,9 @@ import { GroqService } from '../groqService.js';
 import { TextCodeProvider } from '../textCodeProvider.js';
 import {
   clearProviderConfig,
+  currentProviderKey,
   fetchProviderModels,
+  previewKey,
   ProviderError,
   publicProviderStatus,
   saveProviderConfig,
@@ -124,6 +126,8 @@ configRouter.post('/api/provider/test', async (req, res) => {
     const result = await fetchProviderModels({
       baseUrl: String(baseUrl || ''),
       apiKey: String(apiKey || ''),
+      // Campo vazio = "use a chave que já está configurada".
+      fallbackKey: currentProviderKey(),
       timeoutMs: timeoutMs ? Number(timeoutMs) : undefined,
     });
 
@@ -132,11 +136,19 @@ configRouter.post('/api/provider/test', async (req, res) => {
       baseUrl: result.baseUrl,
       total: result.models.length,
       models: result.models,
+      usedKeyPreview: result.usedKeyPreview,
     });
   } catch (error) {
     if (error instanceof ProviderError) {
       const status = error.code === 'TIMEOUT' ? 504 : error.code === 'NETWORK' ? 502 : 400;
-      return res.status(status).json({ ok: false, code: error.code, error: error.message });
+      return res.status(status).json({
+        ok: false,
+        code: error.code,
+        error: error.message,
+        hint: error.hint,
+        triedUrl: error.triedUrl,
+        usedKeyPreview: previewKey(String(apiKey || '') || currentProviderKey()),
+      });
     }
     console.error('[ProviderTest] erro inesperado:', error);
     return res.status(500).json({ ok: false, error: 'Falha inesperada ao testar o provedor.' });

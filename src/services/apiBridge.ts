@@ -812,15 +812,24 @@ export class ApiBridge {
     ok: boolean;
     models?: { id: string; ownedBy?: string; contextLength?: number; kind: string }[];
     baseUrl?: string;
+    total?: number;
+    usedKeyPreview?: string | null;
     error?: string;
+    hint?: string;
+    triedUrl?: string;
     code?: string;
   }> {
     try {
-      const res = await apiFetch('/api/provider/test', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ baseUrl, apiKey }),
-      });
+      const res = await apiFetch(
+        '/api/provider/test',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ baseUrl, apiKey }),
+        },
+        // Teste é diagnóstico: não adianta repetir, o usuário quer saber o motivo agora.
+        { retries: 0, timeoutMs: 20_000 }
+      );
       const data = await res.json().catch(() => ({}));
       return { ...data, ok: res.ok && Boolean(data?.ok) };
     } catch (error) {

@@ -1506,3 +1506,33 @@ principal. Erros são específicos: `BAD_URL`, `BAD_KEY`, `TIMEOUT`, `NETWORK`, 
 sucesso, 401, endpoint inexistente, provedor fora do ar, formato Ollama, persistência 0600 e
 mascaramento da chave. Fluxo completo exercitado por `curl` (testar → 5 modelos → aplicar →
 `/api/groq/status` refletindo o novo modelo) e smoke SSR das duas abas (`initialTab` agora é prop).
+
+---
+
+## Anexo J · Provedor de IA: por que dava erro sempre — corrigido
+
+Relato: "colocar um provedor não funciona, dá erro mesmo com o certo". Investigando, eram
+**três defeitos reais** somados a uma limitação do ambiente:
+
+| Defeito | Sintoma | Correção |
+| --- | --- | --- |
+| Campo de chave vazio era enviado como "sem chave" | testar com a chave já salva dava **401/chave recusada** mesmo estando certa | o teste cai na chave salva (ou do `.env`) e informa qual usou |
+| URL sem protocolo era recusada | "api.groq.com/openai/v1" → **URL inválida** | completa `https://` (e `http://` em localhost/Ollama) |
+| URL sem `/v1` dava 404 | "…/openai" → **404** | se o primeiro `/models` der 404, tenta `/v1` sozinho |
+| Erro de rede sem contexto | parecia "chave errada" | mensagem separa **máquina** de **chave**, com host, código e a URL tentada |
+| Não dava para salvar sem testar | sem internet, nada era salvo | campo **"informe o modelo direto (sem testar)" + Salvar** |
+
+Nova resposta de erro (exemplo real desta máquina):
+```json
+{ "code": "NETWORK",
+  "error": "Não consegui falar com api.groq.com (ECONNRESET).",
+  "hint": "Isso é a máquina onde o OTTO roda, não a chave… na sua máquina funciona.",
+  "triedUrl": "https://api.groq.com/openai/v1/models",
+  "usedKeyPreview": "gsk_UP…BOEy" }
+```
+
+**Validação:** 16 testes no módulo (127 no total). Fluxo exercitado contra um provedor falso
+compatível com OpenAI — URL sem protocolo, URL sem `/v1`, chave vazia usando a salva (200 + 5
+modelos), 401 com dica, rede fora com URL tentada — e depois restaurando a configuração real
+da Groq. O `curl` contra a Groq real devolve `NETWORK` com o aviso de que o bloqueio é do
+sandbox, não da chave.

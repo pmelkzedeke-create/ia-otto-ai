@@ -73,7 +73,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [providerModels, setProviderModels] = useState<
     { id: string; ownedBy?: string; contextLength?: number; kind: string }[] | null
   >(null);
-  const [providerMessage, setProviderMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
+  const [providerMessage, setProviderMessage] = useState<{
+    kind: 'ok' | 'error';
+    text: string;
+    hint?: string;
+    triedUrl?: string;
+  } | null>(null);
+  const [providerManualModel, setProviderManualModel] = useState('');
   const [providerSource, setProviderSource] = useState<'interface' | 'env'>('env');
   const [modelQuery, setModelQuery] = useState('');
 
@@ -835,7 +841,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         setProviderModels(null);
                         setProviderMessage(null);
                       }}
-                      placeholder={providerKeyMasked ? `salva: ${providerKeyMasked} — deixe vazio para manter` : 'gsk_…'}
+                      placeholder={
+                        providerKeyMasked
+                          ? `vazio = usa a chave salva (${providerKeyMasked})`
+                          : 'gsk_…'
+                      }
                       autoComplete="off"
                       spellCheck={false}
                       className="mt-1 w-full bg-[#12151c] border border-white/15 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-cyan-400"
@@ -855,7 +865,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
                       if (!result.ok) {
                         setProviderModels(null);
-                        setProviderMessage({ kind: 'error', text: result.error || 'O provedor não respondeu bem.' });
+                        setProviderMessage({
+                          kind: 'error',
+                          text: result.error || 'O provedor não respondeu bem.',
+                          hint: result.hint,
+                          triedUrl: result.triedUrl,
+                        });
                         return;
                       }
 
@@ -863,7 +878,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       setProviderModels(models);
                       setProviderMessage({
                         kind: 'ok',
-                        text: `Conexão OK — ${models.length} modelo(s) disponível(is). Escolha um e confirme.`,
+                        text: `Conexão OK — ${models.length} modelo(s) disponível(is)${
+                          result.usedKeyPreview ? ` · chave ${result.usedKeyPreview}` : ''
+                        }. Escolha um e confirme.`,
                       });
                     }}
                     className="flex-1 px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed bg-cyan-500/15 border border-cyan-400/40 text-cyan-200 hover:bg-cyan-500/25"
@@ -902,13 +919,66 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
                 {providerMessage && (
                   <div
-                    className={`text-[11px] px-3 py-2 rounded-xl border leading-relaxed ${
+                    className={`text-[11px] px-3 py-2 rounded-xl border leading-relaxed flex flex-col gap-1 ${
                       providerMessage.kind === 'ok'
                         ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-200'
                         : 'bg-rose-500/10 border-rose-500/30 text-rose-200'
                     }`}
                   >
-                    {providerMessage.text}
+                    <span className="font-semibold">{providerMessage.text}</span>
+                    {providerMessage.hint && (
+                      <span className="text-[10px] opacity-90 leading-relaxed">{providerMessage.hint}</span>
+                    )}
+                    {providerMessage.triedUrl && (
+                      <span className="text-[10px] font-mono opacity-70 break-all">
+                        GET {providerMessage.triedUrl}
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {/* Sem teste (ex: servidor sem saída para internet), salva na mão */}
+                {!providerModels && (
+                  <div className="flex flex-col gap-1.5 pt-2 border-t border-white/10">
+                    <label className="text-[11px] text-slate-400">
+                      Ou informe o modelo direto (sem testar)
+                      <div className="flex items-center gap-2 mt-1">
+                        <input
+                          type="text"
+                          value={providerManualModel}
+                          onChange={(e) => setProviderManualModel(e.target.value)}
+                          placeholder="openai/gpt-oss-120b"
+                          spellCheck={false}
+                          className="flex-1 bg-[#12151c] border border-white/15 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-cyan-400"
+                        />
+                        <button
+                          type="button"
+                          disabled={providerApplying || !providerManualModel.trim() || !providerBaseUrl.trim()}
+                          onClick={async () => {
+                            setProviderApplying(true);
+                            setProviderMessage(null);
+                            const result = await ApiBridge.applyProvider(
+                              providerBaseUrl.trim(),
+                              providerKey.trim(),
+                              providerManualModel.trim()
+                            );
+                            setProviderApplying(false);
+                            if (!result.ok) {
+                              setProviderMessage({ kind: 'error', text: result.error || 'Não consegui salvar.' });
+                              return;
+                            }
+                            setProviderSource('interface');
+                            setProviderModel(providerManualModel.trim());
+                            setProviderKey('');
+                            setProviderKeyMasked(result.status?.keyPreview || providerKeyMasked);
+                            setProviderMessage({ kind: 'ok', text: result.message || 'Provedor salvo.' });
+                          }}
+                          className="px-3 py-2 rounded-xl text-xs font-bold bg-white text-slate-950 hover:bg-slate-200 transition-all cursor-pointer active:scale-[0.99] disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+                        >
+                          Salvar
+                        </button>
+                      </div>
+                    </label>
                   </div>
                 )}
 
