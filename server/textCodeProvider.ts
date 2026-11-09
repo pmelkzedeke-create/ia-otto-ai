@@ -75,9 +75,10 @@ export class TextCodeProvider {
     if (this.customModel && this.customModel.trim()) {
       return this.customModel.trim();
     }
-    const envModel = process.env.TEXT_CODE_API_MODEL?.trim();
-    if (!envModel || envModel.includes('gpt-oss')) {
-      return 'llama-3.3-70b-versatile';
+    const envModel = process.env.TEXT_CODE_API_MODEL?.trim() || process.env.AI_MODEL?.trim();
+    // GPT-OSS 120b é o modelo padrão da Groq desde a aposentadoria dos Llama 3.x.
+    if (!envModel || envModel.startsWith('gsk_')) {
+      return 'openai/gpt-oss-120b';
     }
     return envModel;
   }
@@ -141,7 +142,7 @@ export class TextCodeProvider {
       candidateEndpoints.push({
         url: 'https://api.groq.com/openai/v1',
         key: process.env.GROQ_API_KEY.trim(),
-        model: 'llama-3.3-70b-versatile',
+        model: 'openai/gpt-oss-120b',
       });
     }
 
@@ -215,8 +216,12 @@ export class TextCodeProvider {
         };
 
         if (options.maxTokens) {
-          requestBody.max_tokens = options.maxTokens;
+          // GPT-OSS na Groq usa max_completion_tokens; max_tokens é rejeitado.
+          requestBody.max_completion_tokens = options.maxTokens;
         }
+
+        // GPT-OSS não faz chamadas paralelas de ferramenta.
+        requestBody.parallel_tool_calls = false;
 
         if (options.responseFormat === 'json_object') {
           requestBody.response_format = { type: 'json_object' };

@@ -1418,3 +1418,27 @@ injeção de argumentos, clamps, sanitização de nome, travessia de caminho e `
 **Correções encontradas no teste real:** `probe` não gera arquivo (validação de saída pulada),
 `extract_frames` virou folha de contato `tile` (sequência `%03d` não é um único arquivo) e
 operações encadeadas passaram a aceitar entrada em `media/out` (extrair áudio → normalizar).
+
+---
+
+## Anexo G · Modelos GPT-OSS na Groq — entregue
+
+A Groq desligou `llama-3.3-70b-versatile` e `llama-3.1-8b-instant` em 16/08/2026, e o código
+ainda os usava como padrão *e* rebaixava qualquer `gpt-oss` para eles. Resultado: sem IA.
+
+| Correção | Onde |
+| --- | --- |
+| `openai/gpt-oss-120b` como padrão (raciocínio, ferramentas) e `openai/gpt-oss-20b` como tier rápido | `server/groqService.ts` |
+| Apelidos aceitos: `"120b"`, `"20b"`, `"GPT-OSS 120B"`, `oss_20b` → id completo | idem |
+| `max_completion_tokens` no lugar de `max_tokens` (o GPT-OSS rejeita o antigo) | Groq + Rota B |
+| `parallel_tool_calls: false` (GPT-OSS não faz chamadas paralelas) e `reasoning_effort` por caso de uso | idem |
+| Modo JSON nativo na intenção e nos slides | `server.ts` |
+| Erro de rede deixou de mentir "nenhum modelo acessível" e de armar cooldown de 5 min | `server/groqService.ts` |
+| `/api/groq/status` expõe modelo principal, modelo rápido e recorte da chave | `server/routes/config.ts` |
+| `AI_MODEL`, `AI_MODEL_FAST` e `GROQ_BASE_URL` documentados | `.env.example` + `README.md` |
+
+**Validação:** 9 testes novos (102 no total) para resolução de apelidos, escolha por tier e
+formato do payload — incluindo a garantia de que `max_tokens` nunca aparece. `tsc` limpo,
+build OK, `/api/groq/status` respondendo `ready` com os dois modelos. A chamada real não pôde
+ser feita deste ambiente: a rede daqui bloqueia `api.groq.com` (ECONNRESET no handshake TLS),
+o que agora aparece como `GROQ_NETWORK_ERROR` em vez de erro de modelo.

@@ -24,12 +24,16 @@ configRouter.get('/api/health', (req, res) => {
 
 // 2. Status do Groq
 configRouter.get('/api/groq/status', (req, res) => {
+  const configured = Boolean(process.env.GROQ_API_KEY);
+
   res.json({
-    configured: Boolean(process.env.GROQ_API_KEY),
+    configured,
     provider: process.env.AI_PROVIDER || 'groq',
     model: GroqService.DEFAULT_MODEL,
-    endpoint: 'https://api.groq.com/openai/v1',
-    status: Boolean(process.env.GROQ_API_KEY) ? 'ready' : 'missing_api_key',
+    fastModel: GroqService.FAST_MODEL,
+    endpoint: process.env.GROQ_BASE_URL || 'https://api.groq.com/openai/v1',
+    keyPreview: configured ? `${String(process.env.GROQ_API_KEY).slice(0, 6)}…${String(process.env.GROQ_API_KEY).slice(-4)}` : null,
+    status: configured ? 'ready' : 'missing_api_key',
   });
 });
 

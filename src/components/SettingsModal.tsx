@@ -874,7 +874,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <input
                       type="text"
                       defaultValue="openai/gpt-oss-120b"
-                      placeholder="ex: openai/gpt-oss-120b, qwen/qwen-2.5-coder-32b, etc."
+                      placeholder="openai/gpt-oss-120b (raciocínio) ou openai/gpt-oss-20b (rápido)"
                       className="w-full bg-[#12151c] border border-white/15 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono"
                     />
                   </div>

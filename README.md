@@ -20,6 +20,27 @@ Sem chave de IA a interface abre e funciona, mas o OTTO não responde — as cha
 retornam erro de configuração. Para ativar, defina `GROQ_API_KEY` (Rota A) ou informe a chave
 da Rota B direto na UI, em **Configurações → ROTA B**.
 
+### Modelos de IA
+
+O OTTO fala com a Groq (`https://api.groq.com/openai/v1`) usando os modelos open-weights da
+OpenAI — os Llama 3.x foram desligados na Groq em 16/08/2026.
+
+| Papel | Modelo | Onde é usado |
+| --- | --- | --- |
+| Raciocínio | `openai/gpt-oss-120b` | intenção/JSON, ferramentas, conversa, agente |
+| Rápido | `openai/gpt-oss-20b` | tarefas curtas, streaming, JSON simples |
+
+```bash
+AI_MODEL="openai/gpt-oss-120b"      # padrão
+AI_MODEL_FAST="openai/gpt-oss-20b"  # tier leve
+GROQ_API_KEY="gsk_..."
+```
+
+`/api/groq/status` mostra modelo principal, modelo rápido e um recorte da chave (nunca a chave
+inteira). O código escolhe o modelo pelo peso da tarefa (`tier: 'deep' | 'fast'`), manda
+`max_completion_tokens` (nome exigido pelo GPT-OSS), desliga chamadas paralelas de ferramenta
+(não suportadas) e usa o modo JSON nativo quando a resposta precisa ser estruturada.
+
 ### Scripts
 
 | Script | O que faz |

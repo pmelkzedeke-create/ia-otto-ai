@@ -155,6 +155,8 @@ app.post('/api/groq/chat', async (req, res) => {
 
     let groqResult = await GroqService.sendMessage({
       messages,
+      tier: 'deep',
+      reasoningEffort: 'medium',
       tools: enableTools ? AVAILABLE_GROQ_TOOLS : undefined,
     });
 
@@ -186,6 +188,8 @@ app.post('/api/groq/chat', async (req, res) => {
 
       groqResult = await GroqService.sendMessage({
         messages,
+        tier: 'deep',
+        reasoningEffort: 'low',
       });
     }
 
@@ -202,6 +206,8 @@ app.post('/api/groq/chat', async (req, res) => {
     let userMsg = 'Ocorreu um erro ao comunicar com o modelo GPT-OSS 120B da Groq.';
     if (err?.message?.includes('GROQ_API_KEY_INVALID')) userMsg = 'Chave da API Groq inválida.';
     if (err?.message?.includes('GROQ_RATE_LIMIT')) userMsg = 'Limite de requisições do Groq atingido. Tente em alguns instantes.';
+    if (err?.message?.includes('GROQ_NETWORK_ERROR')) userMsg = 'Sem conexão com a Groq. Verifique a internet ou o proxy do servidor.';
+    if (err?.message?.includes('GROQ_MODELS_UNAVAILABLE')) userMsg = 'Sua chave da Groq não tem acesso aos modelos GPT-OSS 120B/20B.';
 
     return res.status(500).json({
       error: err?.message || 'Groq Chat error',
@@ -239,6 +245,8 @@ app.post('/api/groq/stream', async (req, res) => {
   await GroqService.streamMessage(
     {
       messages,
+      tier: 'deep',
+      reasoningEffort: 'low',
       tools: AVAILABLE_GROQ_TOOLS,
     },
     {
@@ -524,6 +532,9 @@ Gere exatamente de 4 a 6 slides detalhados e técnicos, sem informações genér
   if (generatedSlides.length === 0 && process.env.GROQ_API_KEY) {
     try {
       const groqRes = await GroqService.sendMessage({
+        tier: 'fast',
+        responseFormat: 'json',
+        temperature: 0.4,
         messages: [
           {
             role: 'system',
@@ -1421,6 +1432,8 @@ DIRETRIZES FUNDAMENTAIS DE RACIOCÍNIO E DECISÃO:
         messages,
         model: GroqService.DEFAULT_MODEL,
         temperature: 0.2,
+        reasoningEffort: 'low',
+        responseFormat: 'json',
       });
 
       if (groqResult && groqResult.content) {
